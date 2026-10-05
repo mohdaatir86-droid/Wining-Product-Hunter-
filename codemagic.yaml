@@ -1,0 +1,29 @@
+workflows:
+  ios-simulator:
+    name: Product Hunter iOS
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: latest
+
+    scripts:
+      - name: Extract iOS project
+        script: |
+          rm -rf ios_project
+          mkdir ios_project
+          unzip -o ProductHunter_iOS_v1.zip -d ios_project
+
+      - name: Build iOS Simulator
+        script: |
+          cd ios_project
+          xcodebuild \
+            -project ProductHunter.xcodeproj \
+            -scheme ProductHunter \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+    artifacts:
+      - ios_project/build/Build/Products/Debug-iphonesimulator/*.app
