@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Product Hunter AI</title>
+<style>*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f6f7fb;color:#151823}.topbar{height:68px;background:#fff;border-bottom:1px solid #e8e9ef;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:5}.brand{display:flex;gap:11px;align-items:center}.logo{width:40px;height:40px;border-radius:12px;background:#111827;color:#fff;display:grid;place-items:center;font-weight:800}.brand strong{display:block}.brand small{color:#777;font-size:12px}.btn{border:1px solid #ddd;background:#fff;border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer}.primary{background:#111827;color:white;border-color:#111827}main{max-width:1180px;margin:auto;padding:30px 20px}.hero{background:#111827;color:#fff;border-radius:20px;padding:30px;display:flex;justify-content:space-between;gap:20px;align-items:center}.hero h1{font-size:36px;margin:7px 0}.hero p{color:#c8ced9;max-width:650px}.eyebrow{font-size:12px;letter-spacing:1.5px;font-weight:800;color:#9ca3af}.api{background:#222938;padding:10px 13px;border-radius:999px;white-space:nowrap;font-size:13px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:7px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}.stat{background:#fff;border:1px solid #e7e8ed;border-radius:15px;padding:18px}.stat span{display:block;color:#777;font-size:13px}.stat b{font-size:25px;margin-top:6px;display:block}.toolbar{display:flex;gap:10px;margin:20px 0}.toolbar input,.toolbar select{background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px}.toolbar input{flex:1}.empty{background:#fff;border:1px dashed #d7d9e0;border-radius:18px;padding:55px 25px;text-align:center}.emptyIcon{font-size:42px}.empty h2{margin:10px 0 5px}.empty p{color:#777;max-width:620px;margin:0 auto 20px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.card{background:#fff;border:1px solid #e5e6eb;border-radius:16px;padding:17px}.cardTop{display:flex;justify-content:space-between;gap:10px}.score{font-size:28px;font-weight:800}.pill{font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;background:#eee}.meta{color:#777;font-size:13px;margin:5px 0 15px}.bar{height:7px;background:#eee;border-radius:99px;overflow:hidden}.fill{height:100%;background:#111827}.row{display:flex;justify-content:space-between;margin-top:12px;font-size:13px}.muted{color:#777}@media(max-width:800px){.hero{display:block}.hero h1{font-size:29px}.api{display:inline-block;margin-top:12px}.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.toolbar{flex-wrap:wrap}.toolbar input{flex-basis:100%}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">PH</span><div><strong>Product Hunter AI</strong><small>Winning Product Engine</small></div></div>
+  <button id="refresh" class="btn">↻ Refresh</button>
+</header>
+<main>
+  <section class="hero">
+    <div><p class="eyebrow">14-POINT WINNER ENGINE</p><h1>Find products worth testing.</h1><p>Score products on margin, demand, customer fit, shipping, quality and content potential.</p></div>
+    <div class="api"><span id="statusDot" class="dot"></span><span id="statusText">Checking backend…</span></div>
+  </section>
+  <section class="stats">
+    <div class="stat"><span>Products</span><b id="count">0</b></div>
+    <div class="stat"><span>Winners</span><b id="winners">0</b></div>
+    <div class="stat"><span>Avg score</span><b id="avg">—</b></div>
+    <div class="stat"><span>Backend</span><b id="backend">—</b></div>
+  </section>
+  <section class="toolbar">
+    <input id="search" placeholder="Search products…">
+    <select id="verdict"><option value="ALL">All verdicts</option><option>WINNER</option><option>STRONG TEST</option><option>WATCH</option><option>DROP</option></select>
+    <select id="sort"><option value="score">Score: high → low</option><option value="price">Price: high → low</option><option value="name">Name A → Z</option></select>
+  </section>
+  <div id="empty" class="empty"><div class="emptyIcon">🔎</div><h2>No live products yet</h2><p>Your backend is online, but it currently contains 0 products. Once Apify/RapidAPI is connected, products will appear here automatically.</p><button id="docs" class="btn primary">Open API tester</button></div>
+  <section id="grid" class="grid"></section>
+</main>
+<script>const API="https://wining-product-hunter.onrender.com";
+let products=[];
+const $=id=>document.getElementById(id);
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+function render(){
+ const q=$("search").value.toLowerCase(), v=$("verdict").value, s=$("sort").value;
+ let a=products.filter(p=>(!q||String(p.name||"").toLowerCase().includes(q))&&(!v||v==="ALL"||p.verdict===v));
+ a.sort((x,y)=>s==="score"?y.score-x.score:s==="price"?y.price-x.price:String(x.name).localeCompare(String(y.name)));
+ $("count").textContent=a.length;$("winners").textContent=products.filter(p=>p.verdict==="WINNER").length;
+ $("avg").textContent=products.length?(products.reduce((n,p)=>n+(p.score||0),0)/products.length).toFixed(1):"—";
+ $("empty").style.display=a.length?"none":"block";
+ $("grid").innerHTML=a.map(p=>`<article class="card"><div class="cardTop"><div><b>${esc(p.name)}</b><div class="meta">${esc(p.category||"Product")}</div></div><div class="score">${p.score??0}</div></div><div class="pill">${esc(p.verdict||"WATCH")}</div><div class="bar"><div class="fill" style="width:${Math.min(100,p.score||0)}%"></div></div><div class="row"><span class="muted">Price</span><b>$${Number(p.price||0).toFixed(0)}</b></div><div class="row"><span class="muted">COGS</span><span>$${Number(p.cogs||0).toFixed(0)}</span></div><div class="row"><span class="muted">Markup</span><span>${Number(p.markup||0).toFixed(1)}×</span></div><div class="row"><span class="muted">Customer</span><span>${esc(p.golden_customer||"—")}</span></div></article>`).join("");
+}
+async function load(){
+ $("statusText").textContent="Checking backend…";
+ try{
+  const h=await fetch(API+"/health"); const hd=await h.json();
+  $("statusText").textContent="Backend online";$("statusDot").style.background="#22c55e";$("backend").textContent="ONLINE";
+  const r=await fetch(API+"/products/top?limit=50"); const d=await r.json(); products=d.products||[];
+ }catch(e){$("statusText").textContent="Backend unavailable";$("statusDot").style.background="#ef4444";$("backend").textContent="OFFLINE";products=[]}
+ render();
+}
+["search","verdict","sort"].forEach(id=>$(id).addEventListener("input",render));
+$("refresh").onclick=load;$("docs").onclick=()=>location.href=API+"/docs";load();
+</script>
+</body></html>
