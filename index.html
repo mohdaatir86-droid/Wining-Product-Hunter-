@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<title>Product Hunter AI — Command Center</title>
+<style>
+:root{--bg:#080b10;--panel:#10151d;--panel2:#141b25;--line:#26303d;--text:#f4f7fb;--muted:#8e9aaa;--green:#a6e36d;--blue:#75b8ff;--orange:#ffc66d;--red:#ff7f8a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#16202d 0,#080b10 42%);color:var(--text);font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}.app{max-width:1180px;margin:auto;min-height:100vh;padding-bottom:85px}
+header{position:sticky;top:0;z-index:10;background:#080b10e8;backdrop-filter:blur(18px);border-bottom:1px solid var(--line);padding:13px 18px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;gap:10px;align-items:center}.logo{width:38px;height:38px;border-radius:12px;background:var(--green);color:#10150c;display:grid;place-items:center;font-weight:950}.brand b{display:block}.brand small{color:var(--muted);font-size:9px;letter-spacing:1.2px}
+.status{font-size:11px;padding:7px 10px;border:1px solid var(--line);border-radius:99px}.online{color:var(--green)}.offline{color:var(--red)}
+main{padding:18px}.tabs{display:flex;gap:7px;overflow:auto;padding:2px 0 14px;scrollbar-width:none}.tabs button{white-space:nowrap;background:#111721;color:#aeb8c9;border:1px solid var(--line);padding:9px 12px;border-radius:99px}.tabs button.active{background:#24351e;color:var(--green);border-color:#52663c}
+.screen{display:none}.screen.active{display:block}.hero{padding:22px 0}.eyebrow{color:var(--green);font-weight:850;font-size:11px;letter-spacing:1.5px}.hero h1{font-size:38px;line-height:1.03;margin:9px 0}.hero p,.sub{color:var(--muted);max-width:700px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.panel,.card,.stat,.pipeline,.raw,.rule{background:linear-gradient(180deg,#111821,#0e141c);border:1px solid var(--line);border-radius:16px;padding:15px}.field{margin-bottom:10px}.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:6px}.field input,.field select{width:100%;background:#0b1017;color:var(--text);border:1px solid #2b3645;border-radius:10px;padding:10px;outline:none}.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.primary,.secondary,.danger{border:0;border-radius:11px;padding:11px 14px;font-weight:850}.primary{background:var(--green);color:#11170d}.secondary{background:#1a2330;color:#dbe5f2;border:1px solid var(--line)}.danger{background:#351a20;color:#ffadb5;border:1px solid #633039}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:12px 0}.stat small{color:var(--muted)}.stat b{display:block;font-size:25px;margin-top:5px}.stat em{font-size:10px;color:#6f7a88;font-style:normal}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:20px 0 10px}.section-title h2,.section-title h3{margin:0}.muted{color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.card h3{margin:0 0 5px;font-size:15px}.score{font-size:30px;font-weight:950;color:var(--green)}.row{display:flex;justify-content:space-between;border-top:1px solid #202936;padding:8px 0;font-size:12px}.pill{display:inline-block;padding:5px 8px;border-radius:99px;background:#1d2732;color:#b9c6d5;font-size:10px;font-weight:850}.winner{background:#263b1e;color:var(--green)}.watch{color:var(--orange)}.reject{color:var(--red)}
+.pipeline{margin-top:10px}.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.step{padding:11px;border:1px solid var(--line);border-radius:12px;background:#0b1017}.step b{display:block;font-size:11px}.step span{display:block;color:var(--muted);font-size:10px;margin-top:4px}.step.live{border-color:#789b52;box-shadow:0 0 0 1px #789b5230}.step.done b{color:var(--green)}
+.raw{overflow:auto}.raw pre{white-space:pre-wrap;word-break:break-word;color:#b9c7d8;font-size:11px;line-height:1.5;max-height:480px}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:14px}.table{width:100%;border-collapse:collapse;min-width:700px}.table th,.table td{text-align:left;padding:10px;border-bottom:1px solid var(--line);font-size:11px}.table th{color:var(--muted);font-weight:700}
+.rules{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.rule b{display:block;margin-bottom:7px}.rule span{color:var(--muted);font-size:12px;line-height:1.5}
+.notice{padding:12px;border:1px solid #3b4655;background:#101822;border-radius:12px;color:#aebaca;font-size:11px;line-height:1.5;margin-top:10px}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid #ffffff40;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}@keyframes spin{to{transform:rotate(360deg)}}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#080b10ed;border-top:1px solid var(--line);backdrop-filter:blur(15px);padding:10px 12px;display:flex;justify-content:center;z-index:20}.bottom span{font-size:10px;color:#697585}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.steps{grid-template-columns:1fr 1fr}.rules{grid-template-columns:1fr}.hero h1{font-size:30px}}
+@media(max-width:520px){main{padding:13px}.grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.panel,.card,.stat,.pipeline,.raw,.rule{border-radius:13px}.hero{padding:13px 0}.tabs button{padding:8px 10px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="logo">PH</div><div><b>Product Hunter AI</b><small>COMMERCE COMMAND CENTER</small></div></div>
+  <div id="backendStatus" class="status">Checking…</div>
+</header>
+
+<main>
+<nav class="tabs">
+<button class="active" data-tab="dashboard">Dashboard</button>
+<button data-tab="hunt">AI Hunt</button>
+<button data-tab="winners">Winners</button>
+<button data-tab="pipeline">Pipeline</button>
+<button data-tab="scraper">Scraper Data</button>
+<button data-tab="history">History</button>
+<button data-tab="rules">Rules</button>
+</nav>
+
+<section id="dashboard" class="screen active">
+  <div class="hero">
+    <div class="eyebrow">14-POINT WINNER ENGINE</div>
+    <h1>Find products worth testing.</h1>
+    <p>One command center for product discovery, source transparency, scoring, economics and hunt history.</p>
+    <div class="actions"><button class="primary" onclick="showTab('hunt')">🚀 Start AI Hunt</button><button class="secondary" onclick="refreshAll()">↻ Refresh data</button></div>
+  </div>
+  <div class="kpis">
+    <div class="stat"><small>Accepted</small><b id="kAccepted">—</b><em>score ≥ 60</em></div>
+    <div class="stat"><small>Winners</small><b id="kWinners">—</b><em>strong opportunities</em></div>
+    <div class="stat"><small>Avg score</small><b id="kAvg">—</b><em>accepted products</em></div>
+    <div class="stat"><small>Hunts</small><b id="kHunts">—</b><em>recorded runs</em></div>
+    <div class="stat"><small>Backend</small><b id="kBackend">—</b><em>live API</em></div>
+  </div>
+  <div class="section-title"><h2>Top opportunities</h2><button class="secondary" onclick="showTab('winners')">View winners</button></div>
+  <div id="dashCards" class="cards"><div class="notice">Loading live data…</div></div>
+  <div class="section-title"><h2>Live processing</h2><button class="secondary" onclick="showTab('pipeline')">Open pipeline</button></div>
+  <div id="dashPipeline" class="pipeline"></div>
+  <div class="notice">Transparency rule: the UI only labels data as live when it is returned by your backend. If a source fails, the failure is shown instead of hiding it.</div>
+</section>
+
+<section id="hunt" class="screen">
+  <div class="section-title"><div><h2>AI Product Hunt</h2><div class="muted">Kitchen Utility + Home Décor only</div></div></div>
+  <div class="panel">
+    <div class="grid">
+      <div class="field"><label>Category</label><select id="category"><option value="all">Both categories</option><option value="kitchen_utility">Kitchen Utility</option><option value="home_decor">Home Décor</option></select></div>
+      <div class="field"><label>Keyword (optional)</label><input id="keyword" placeholder="Leave blank for automatic discovery"></div>
+      <div class="field"><label>Market</label><select id="market"><option value="US">US — USD</option><option value="IN">India — INR</option></select></div>
+      <div class="field"><label>Max products</label><input id="maxProducts" type="number" value="20" min="1" max="100"></div>
+      <div class="field"><label>Min selling price</label><input id="minPrice" type="number" value="40"></div>
+      <div class="field"><label>Preferred max price</label><input id="maxPrice" type="number" value="80"></div>
+      <div class="field"><label>Max COGS</label><input id="maxCogs" type="number" value="35"></div>
+      <div class="field"><label>Min markup</label><input id="markup" type="number" value="3" step=".1"></div>
+      <div class="field"><label>Min rating</label><input id="rating" type="number" value="4" step=".1"></div>
+      <div class="field"><label>Min reviews</label><input id="reviews" type="number" value="50"></div>
+      <div class="field"><label>Accept score ≥</label><input id="score" type="number" value="60"></div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="runBtn" onclick="runHunt()">🚀 RUN AI HUNT</button>
+      <button class="secondary" onclick="runAuto('all')">⚡ Auto Hunt</button>
+      <span id="huntMsg" class="muted">Ready</span>
+    </div>
+  </div>
+  <div class="section-title"><h3>Hunt results</h3><button class="secondary" onclick="refreshAccepted()">Refresh</button></div>
+  <div id="huntResults" class="cards"><div class="notice">Run a hunt to see results.</div></div>
+</section>
+
+<section id="winners" class="screen">
+  <div class="section-title"><div><h2>Winners</h2><div class="muted">Accepted products ranked by the 14-point engine</div></div><button class="secondary" onclick="refreshWinners()">↻ Refresh</button></div>
+  <div id="winnerCards" class="cards"><div class="notice">Loading…</div></div>
+</section>
+
+<section id="pipeline" class="screen">
+  <div class="section-title"><div><h2>Processing Transparency</h2><div class="muted">See where a hunt is working or failing</div></div><button class="secondary" onclick="refreshPipeline()">↻ Refresh</button></div>
+  <div id="pipelineBox" class="pipeline"></div>
+  <div class="kpis">
+    <div class="stat"><small>Demand seen</small><b id="pDemand">—</b></div>
+    <div class="stat"><small>Supplier records</small><b id="pSupplier">—</b></div>
+    <div class="stat"><small>Accepted</small><b id="pAccepted">—</b></div>
+    <div class="stat"><small>Rejected</small><b id="pRejected">—</b></div>
+    <div class="stat"><small>Errors</small><b id="pErrors">—</b></div>
+  </div>
+  <div id="pipelineRaw" class="raw"><pre>Waiting for /pipeline/latest…</pre></div>
+</section>
+
+<section id="scraper" class="screen">
+  <div class="section-title"><div><h2>Scraper Data</h2><div class="muted">Actual records returned by your configured scraper APIs</div></div><button class="secondary" onclick="refreshScraper()">↻ Refresh</button></div>
+  <div class="notice">This screen is intentionally raw. It helps you verify whether Crawlbase / fallback sources are actually returning product data before scoring.</div>
+  <div id="scraperMeta" class="kpis"></div>
+  <div id="scraperBox" class="raw"><pre>Waiting for /scraper-data/latest…</pre></div>
+</section>
+
+<section id="history" class="screen">
+  <div class="section-title"><div><h2>Hunt History</h2><div class="muted">Previous runs, categories and outcomes</div></div><button class="secondary" onclick="refreshHistory()">↻ Refresh</button></div>
+  <div id="historyTable" class="tablewrap"><table class="table"><thead><tr><th>Time</th><th>Category</th><th>Keyword</th><th>Products</th><th>Accepted</th><th>Status</th></tr></thead><tbody><tr><td colspan="6">Loading…</td></tr></tbody></table></div>
+</section>
+
+<section id="rules" class="screen">
+  <div class="section-title"><div><h2>Winner Rules</h2><div class="muted">The visible guardrails used by Product Hunter</div></div></div>
+  <div class="rules">
+    <div class="rule"><b>💰 Economics</b><span>Target selling price $50–$80, minimum $40, COGS up to ~$35 and minimum 3× markup.</span></div>
+    <div class="rule"><b>⭐ Proof of demand</b><span>Minimum rating 4.0 and 50+ reviews; successful existing sellers are a positive signal.</span></div>
+    <div class="rule"><b>🎯 Customer clarity</b><span>Prioritize products with a clear golden customer and an obvious pain point or passion point.</span></div>
+    <div class="rule"><b>🔥 Wow factor</b><span>Prefer products with strong perceived value and differentiation rather than commodity items.</span></div>
+    <div class="rule"><b>📦 Logistics</b><span>Small, lightweight and easy to ship. Reject electronics, fragile/glass and ingestible products.</span></div>
+    <div class="rule"><b>🌱 Evergreen</b><span>Avoid seasonal products. Prefer products with frequent or repeat use.</span></div>
+    <div class="rule"><b>🎥 Content potential</b><span>Prioritize products you can realistically demonstrate and make compelling content around.</span></div>
+    <div class="rule"><b>🏆 Score bands</b><span>0–59 Reject · 60–69 Watch · 70–79 Test · 80–89 Strong Winner · 90–100 Exceptional.</span></div>
+  </div>
+  <div class="notice">Important: these are the product-selection rules exposed in the UI. The backend remains the source of truth for actual scoring.</div>
+</section>
+</main>
+<div class="bottom"><span>Product Hunter AI · Crawlbase primary + configured fallbacks · Live transparency enabled</span></div>
+</div>
+
+<script>
+const API='https://wining-product-hunter.onrender.com';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+let latestProducts=[];
+
+function showTab(id){
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));
+  $(id).classList.add('active');
+  if(id==='winners')refreshWinners();
+  if(id==='pipeline')refreshPipeline();
+  if(id==='scraper')refreshScraper();
+  if(id==='history')refreshHistory();
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+async function api(path,opts={}){
+  const r=await fetch(API+path,{cache:'no-store',...opts,headers:{'Content-Type':'application/json',...(opts.headers||{})}});
+  const text=await r.text();
+  let data; try{data=JSON.parse(text)}catch{data={raw:text}};
+  if(!r.ok)throw new Error('HTTP '+r.status+(data.detail?': '+data.detail:''));
+  return data;
+}
+function productCard(p){
+  const score=Number(p.score||0); const verdict=p.verdict||p.label||'—';
+  const cls=score>=80?'winner':score<60?'reject':'watch';
+  return `<article class="card"><div style="display:flex;justify-content:space-between;gap:10px"><div><h3>${esc(p.name||p.title||'Unnamed product')}</h3><div class="muted">${esc(p.category||'')}</div></div><div class="score">${esc(score)}</div></div>
+  <p><span class="pill ${cls}">${esc(verdict)}</span></p>
+  <div class="row"><span class="muted">Selling</span><b>${esc(p.sellingPrice??p.price??'—')}</b></div>
+  <div class="row"><span class="muted">COGS</span><span>${esc(p.costOfGoods??p.cogs??'—')}</span></div>
+  <div class="row"><span class="muted">Markup</span><span>${esc(p.markup??'—')}×</span></div>
+  <div class="row"><span class="muted">Rating / Reviews</span><span>${esc(p.rating??'—')}★ / ${esc(p.reviews??p.review_count??'—')}</span></div>
+  ${p.url?`<div class="actions"><a class="secondary" style="text-decoration:none" target="_blank" rel="noopener" href="${esc(p.url)}">Open source ↗</a></div>`:''}</article>`;
+}
+function renderProducts(ps,target){
+  latestProducts=Array.isArray(ps)?ps:[];
+  $(target).innerHTML=latestProducts.length?latestProducts.map(productCard).join(''):'<div class="notice">No accepted products returned.</div>';
+  $('kAccepted').textContent=latestProducts.length;
+  const wins=latestProducts.filter(p=>Number(p.score||0)>=80 || String(p.verdict||'').toUpperCase().includes('WINNER')).length;
+  $('kWinners').textContent=wins;
+  $('kAvg').textContent=latestProducts.length?(latestProducts.reduce((a,p)=>a+Number(p.score||0),0)/latestProducts.length).toFixed(1):'—';
+}
+async function health(){
+  try{
+    const d=await api('/health'); const ok=d.status==='ok'||d.status==='healthy';
+    $('backendStatus').className='status '+(ok?'online':'offline');$('backendStatus').textContent=(ok?'🟢 ':'🔴 ')+'Backend '+(d.version||'online');$('kBackend').textContent=ok?'ONLINE':'ERROR';
+  }catch(e){$('backendStatus').className='status offline';$('backendStatus').textContent='🔴 Backend offline';$('kBackend').textContent='OFFLINE'}
+}
+async function refreshAccepted(){
+  try{const d=await api('/products/accepted?limit=100');renderProducts(d.products||d||[],'huntResults')}catch(e){$('huntResults').innerHTML=`<div class="notice">Could not load accepted products: ${esc(e.message)}</div>`}
+}
+async function refreshWinners(){
+  try{const d=await api('/products/winners');renderProducts(d.products||d||[],'winnerCards')}catch(e){$('winnerCards').innerHTML=`<div class="notice">Could not load winners: ${esc(e.message)}</div>`}
+}
+async function runHunt(){
+  const btn=$('runBtn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> HUNTING…';$('huntMsg').textContent='Starting pipeline…';showTab('pipeline');
+  try{
+    const category=$('category').value;
+    const body={keyword:$('keyword').value.trim(),marketplace:$('market').value,currency:$('market').value==='IN'?'INR':'USD',max_products:Number($('maxProducts').value),min_selling_price:Number($('minPrice').value),preferred_max_price:Number($('maxPrice').value),max_cogs:Number($('maxCogs').value),min_markup:Number($('markup').value),min_rating:Number($('rating').value),min_reviews:Number($('reviews').value),min_score:Number($('score').value)};
+    const path=category==='all'?'/auto-hunt/all':'/auto-hunt/'+category;
+    const d=await api(path,{method:'POST',body:JSON.stringify(body)});
+    $('huntMsg').textContent='Hunt completed';await refreshPipeline();await refreshAccepted();await refreshWinners();
+  }catch(e){$('huntMsg').textContent='Failed: '+e.message;await refreshPipeline()}finally{btn.disabled=false;btn.textContent='🚀 RUN AI HUNT'}
+}
+async function runAuto(cat){showTab('pipeline');try{await api('/auto-hunt/'+cat,{method:'POST',body:JSON.stringify({max_products:20})});await refreshPipeline();await refreshAccepted();await refreshWinners()}catch(e){$('pipelineRaw').innerHTML='<pre>'+esc(e.message)+'</pre>'}}
+function drawPipeline(d){
+  const p=d||{}; const stage=String(p.stage||p.status||'unknown').toLowerCase();
+  const stages=['scraping','normalizing','filtering','scoring','complete'];
+  $('pipelineBox').innerHTML='<div class="steps">'+stages.map((s,i)=>{let done=stage==='complete'||stages.indexOf(stage)>i;let live=stage===s;return `<div class="step ${done?'done':''} ${live?'live':''}"><b>${done?'✓ ':live?'⏳ ':''}${s[0].toUpperCase()+s.slice(1)}</b><span>${live?'Current stage':done?'Completed':'Waiting'}</span></div>`}).join('')+'</div>';
+  const c=d.counters||d.counts||{};$('pDemand').textContent=c.demand_seen??d.demand_seen??'—';$('pSupplier').textContent=c.supplier_records??d.supplier_records??'—';$('pAccepted').textContent=c.accepted??d.accepted??'—';$('pRejected').textContent=c.rejected??d.rejected??'—';$('pErrors').textContent=c.errors??d.errors??'—';
+  $('pipelineRaw').innerHTML='<pre>'+esc(JSON.stringify(d,null,2))+'</pre>';
+  $('dashPipeline').innerHTML=$('pipelineBox').innerHTML;
+}
+async function refreshPipeline(){
+  try{const d=await api('/pipeline/latest');drawPipeline(d)}catch(e){$('pipelineBox').innerHTML='<div class="notice">Pipeline endpoint unavailable: '+esc(e.message)+'</div>';$('pipelineRaw').innerHTML='<pre>'+esc(e.message)+'</pre>'}
+}
+async function refreshScraper(){
+  try{const d=await api('/scraper-data/latest');$('scraperBox').innerHTML='<pre>'+esc(JSON.stringify(d,null,2))+'</pre>';const c=d.counters||d.counts||{};$('scraperMeta').innerHTML=`<div class="stat"><small>Amazon records</small><b>${esc(c.amazon??d.amazon_count??'—')}</b></div><div class="stat"><small>AliExpress records</small><b>${esc(c.aliexpress??d.aliexpress_count??'—')}</b></div><div class="stat"><small>Source</small><b style="font-size:14px">${esc(d.source??'—')}</b></div>`}catch(e){$('scraperBox').innerHTML='<pre>'+esc(e.message)+'</pre>'}
+}
+async function refreshHistory(){
+  try{const d=await api('/hunt-history?limit=50');const rows=d.history||d.hunts||d||[];$('historyTable').innerHTML='<table class="table"><thead><tr><th>Time</th><th>Category</th><th>Keyword</th><th>Products</th><th>Accepted</th><th>Status</th></tr></thead><tbody>'+rows.map(x=>`<tr><td>${esc(x.created_at||x.timestamp||'—')}</td><td>${esc(x.category||'—')}</td><td>${esc(x.keyword||'Automatic')}</td><td>${esc(x.products||x.total_products||'—')}</td><td>${esc(x.accepted||x.accepted_count||'—')}</td><td>${esc(x.status||'—')}</td></tr>`).join('')+'</tbody></table>'}catch(e){$('historyTable').innerHTML='<div class="notice">History endpoint unavailable: '+esc(e.message)+'</div>'}
+}
+async function refreshAll(){
+  await Promise.allSettled([health(),refreshAccepted(),refreshWinners(),refreshPipeline()]);
+  try{const d=await api('/hunt-history?limit=50');const rows=d.history||d.hunts||d||[];$('kHunts').textContent=Array.isArray(rows)?rows.length:'—'}catch{$('kHunts').textContent='—'}
+}
+health();refreshAll();
+</script>
+</body>
+</html>
