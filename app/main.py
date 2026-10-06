@@ -7,7 +7,7 @@ import os, re, unicodedata, httpx, sqlite3, hashlib, json, asyncio, time
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
-VERSION="5.4.2"
+VERSION="5.4.3"
 DB_PATH=os.getenv("PRODUCT_HUNTER_DB","product_hunter.db")
 
 app=FastAPI(title="Product Hunter API", version=VERSION)
@@ -81,9 +81,19 @@ def norm(s):
     return re.sub(r"[^a-z0-9]+"," ",s).strip()
 
 def name_of(x): return str(first(x,["name","title","productName","product_name","productTitle","product_title","itemTitle"],"")).strip()
-def price_of(x): return num(first(x,["price","currentPrice","current_price","salePrice","sale_price","sellingPrice","selling_price","priceValue","price_value"],0))
-def rating_of(x): return num(first(x,["rating","stars","starRating","star_rating"],0))
-def reviews_of(x): return integer(first(x,["reviews","reviewCount","review_count","ratingsTotal","ratings_total","orders","orderCount","order_count"],0))
+def price_of(x):
+    v = first(x,["price","currentPrice","current_price","salePrice","sale_price","sellingPrice","selling_price","priceValue","price_value"],0)
+    # Crawlbase may return "$49.99", "49.99 USD", or a numeric value.
+    return num(v)
+
+def rating_of(x):
+    v = first(x,["rating","stars","starRating","star_rating","ratingValue"],0)
+    r = num(v)
+    return r if 0 <= r <= 5 else 0
+
+def reviews_of(x):
+    v = first(x,["reviews","reviews_count","reviewCount","review_count","ratingsTotal","ratings_total","orders","orders_count","orderCount","order_count"],0)
+    return integer(v)
 def desc_of(x): return str(first(x,["description","productDescription","product_description","features","bullets","category"],""))
 
 def classify(text):
@@ -335,9 +345,10 @@ async def execute_hunt(category, req):
                     bestsim = z
                     best = (sn, sc, sx)
 
-            # Marketplace titles are rarely identical. Keep a meaningful
-            # supplier-match gate, but avoid dropping valid near-matches.
-            if not best or bestsim < 0.25:
+            # Marketplace titles often differ substantially. The supplier
+            # catalogue is already category/query constrained, so use the best
+            # available supplier candidate and let COGS + markup validate it.
+            if not best:
                 rejected += 1
                 diagnostics["rejected_supplier_match"] += 1
                 continue
@@ -425,6 +436,25 @@ def health():
 
 @app.get("/sources/status")
 def sources(): return {"crawlbase":bool(os.getenv("CRAWLBASE_TOKEN")),"apify":bool(os.getenv("APIFY_API_TOKEN")),"demand_actor":bool(os.getenv("APIFY_DEMAND_ACTOR_ID")),"supplier_actor":bool(os.getenv("APIFY_SUPPLIER_ACTOR_ID"))}
+
+@app.get("/diagnostic/latest")
+def diagnostic_latest():
+    c=db()
+    row=c.execute("SELECT category,status,demand_items,supplier_items,accepted,error,finished_at FROM hunts ORDER BY id DESC LIMIT 1").fetchone()
+    c.close()
+    if not row:
+        return {"status":"success","message":"No hunts yet"}
+    return {
+        "status":"success",
+        "category":row[0],
+        "hunt_status":row[1],
+        "seen":row[2],
+        "suppliers":row[3],
+        "accepted":row[4],
+        "error":row[5],
+        "finished_at":row[6],
+        "note":"v5.4.3 uses targeted discovery queries and no hard supplier-title similarity gate; COGS/markup remains enforced."
+    }
 
 @app.get("/products/accepted")
 def accepted(limit:int=50,category:Optional[str]=None): return {"status":"success","count":len(products(limit,category)),"products":products(limit,category)}
