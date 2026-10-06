@@ -7,7 +7,7 @@ import os, re, unicodedata, httpx, sqlite3, hashlib, json, asyncio, time
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
-VERSION="5.4.3"
+VERSION="5.4.4"
 DB_PATH=os.getenv("PRODUCT_HUNTER_DB","product_hunter.db")
 
 app=FastAPI(title="Product Hunter API", version=VERSION)
@@ -43,6 +43,9 @@ def db():
     c.execute("PRAGMA journal_mode=WAL")
     c.execute("CREATE TABLE IF NOT EXISTS products (fingerprint TEXT PRIMARY KEY, data TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)")
     c.execute("CREATE TABLE IF NOT EXISTS hunts (id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT, status TEXT, started_at TEXT, finished_at TEXT, demand_items INTEGER DEFAULT 0, supplier_items INTEGER DEFAULT 0, accepted INTEGER DEFAULT 0, error TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS pipeline (run_id INTEGER PRIMARY KEY, category TEXT, stage TEXT, message TEXT, seen INTEGER DEFAULT 0, suppliers INTEGER DEFAULT 0, accepted INTEGER DEFAULT 0, updated_at TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS scraper_snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, run_id INTEGER, source TEXT, fetched_at TEXT, item_count INTEGER, sample_json TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS hunt_diagnostics (run_id INTEGER PRIMARY KEY, diagnostics_json TEXT, updated_at TEXT)")
     c.commit(); return c
 
 def now(): return datetime.now(timezone.utc).isoformat()
@@ -209,6 +212,16 @@ async def run_crawlbase_aliexpress(queries, pages=1):
                 items.append(y)
     return items
 
+def set_pipeline(run_id, category, stage, message, seen=0, suppliers=0, accepted=0):
+    c=db(); c.execute("INSERT INTO pipeline(run_id,category,stage,message,seen,suppliers,accepted,updated_at) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(run_id) DO UPDATE SET stage=excluded.stage,message=excluded.message,seen=excluded.seen,suppliers=excluded.suppliers,accepted=excluded.accepted,updated_at=excluded.updated_at",(run_id,category,stage,message,seen,suppliers,accepted,now())); c.commit(); c.close()
+
+def save_scraper_snapshot(run_id, source, items):
+    sample = items[:25] if isinstance(items,list) else []
+    c=db(); c.execute("INSERT INTO scraper_snapshots(run_id,source,fetched_at,item_count,sample_json) VALUES(?,?,?,?,?)",(run_id,source,now(),len(items) if isinstance(items,list) else 0,json.dumps(sample,ensure_ascii=False,default=str))); c.commit(); c.close()
+
+def save_diagnostics(run_id, diagnostics):
+    c=db(); c.execute("INSERT INTO hunt_diagnostics(run_id,diagnostics_json,updated_at) VALUES(?,?,?) ON CONFLICT(run_id) DO UPDATE SET diagnostics_json=excluded.diagnostics_json,updated_at=excluded.updated_at",(run_id,json.dumps(diagnostics,ensure_ascii=False),now())); c.commit(); c.close()
+
 async def execute_hunt(category, req):
     if category not in CATEGORIES:
         raise ValueError("Only kitchen_utility and home_decor are allowed")
@@ -225,6 +238,7 @@ async def execute_hunt(category, req):
     run_id = cur.lastrowid
     c.commit()
     c.close()
+    set_pipeline(run_id, category, "starting", "Preparing product hunt")
 
     demand = []
     supplier = []
@@ -234,12 +248,18 @@ async def execute_hunt(category, req):
         # Crawlbase is now the primary source.
         if os.getenv("CRAWLBASE_TOKEN"):
             try:
+                set_pipeline(run_id, category, "scraping_amazon", "Fetching Amazon demand data")
                 demand = await run_crawlbase_amazon(queries, req.amazon_pages)
+                save_scraper_snapshot(run_id, "amazon", demand)
+                set_pipeline(run_id, category, "scraping_amazon_done", f"Amazon returned {len(demand)} records", seen=len(demand))
             except Exception as e:
                 source_errors.append(f"crawlbase_amazon: {e}")
 
             try:
+                set_pipeline(run_id, category, "scraping_aliexpress", "Fetching AliExpress supplier data")
                 supplier = await run_crawlbase_aliexpress(queries, req.supplier_pages)
+                save_scraper_snapshot(run_id, "aliexpress", supplier)
+                set_pipeline(run_id, category, "scraping_aliexpress_done", f"AliExpress returned {len(supplier)} records", seen=len(demand), suppliers=len(supplier))
             except Exception as e:
                 source_errors.append(f"crawlbase_aliexpress: {e}")
 
@@ -288,6 +308,7 @@ async def execute_hunt(category, req):
                 except Exception as e:
                     source_errors.append(f"apify_aliexpress: {e}")
 
+        set_pipeline(run_id, category, "normalizing", f"Normalizing {len(demand)} demand and {len(supplier)} supplier records", seen=len(demand), suppliers=len(supplier))
         suppliers = []
         for x in supplier:
             n = name_of(x)
@@ -308,6 +329,7 @@ async def execute_hunt(category, req):
             "rejected_score": 0,
         }
 
+        set_pipeline(run_id, category, "filtering", "Applying category, price, rating, reviews and shipping-safety rules", seen=len(demand), suppliers=len(supplier))
         for i, x in enumerate(demand):
             n = name_of(x)
             sell = price_of(x)
@@ -359,6 +381,8 @@ async def execute_hunt(category, req):
                 diagnostics["rejected_cogs_markup"] += 1
                 continue
 
+            if i % 10 == 0:
+                set_pipeline(run_id, category, "scoring", f"Scoring demand record {i+1}/{len(demand)}", seen=len(demand), suppliers=len(supplier), accepted=len(accepted))
             score, breakdown = score_product(
                 sell, cogs, rating, reviews, n, desc, category
             )
@@ -392,6 +416,8 @@ async def execute_hunt(category, req):
             save_product(p)
             accepted.append(p)
 
+        save_diagnostics(run_id, diagnostics)
+        set_pipeline(run_id, category, "complete", f"Completed: {len(accepted)} accepted from {len(demand)} demand records", seen=len(demand), suppliers=len(supplier), accepted=len(accepted))
         status = "success" if demand or supplier else "success"
         error_text = "; ".join(source_errors)[:2000] if source_errors else None
 
@@ -417,6 +443,7 @@ async def execute_hunt(category, req):
         }
 
     except Exception as e:
+        set_pipeline(run_id, category, "error", str(e)[:300], seen=len(demand), suppliers=len(supplier), accepted=0)
         c = db()
         c.execute(
             "UPDATE hunts SET status=?,finished_at=?,error=? WHERE id=?",
@@ -432,7 +459,7 @@ def startup(): db().close()
 @app.get("/health")
 def health():
     db().close()
-    return {"status":"ok","version":VERSION,"database":"connected","crawlbase_configured":bool(os.getenv("CRAWLBASE_TOKEN")),"apify_configured":bool(os.getenv("APIFY_API_TOKEN")),"categories_available":list(CATEGORIES.keys())}
+    return {"status":"ok","version":VERSION,"database":"connected","crawlbase_configured":bool(os.getenv("CRAWLBASE_TOKEN")),"apify_configured":bool(os.getenv("APIFY_API_TOKEN")),"categories_available":list(CATEGORIES.keys()),"transparency_endpoints":["/pipeline/latest","/scraper-data/latest"]}
 
 @app.get("/sources/status")
 def sources(): return {"crawlbase":bool(os.getenv("CRAWLBASE_TOKEN")),"apify":bool(os.getenv("APIFY_API_TOKEN")),"demand_actor":bool(os.getenv("APIFY_DEMAND_ACTOR_ID")),"supplier_actor":bool(os.getenv("APIFY_SUPPLIER_ACTOR_ID"))}
@@ -455,6 +482,24 @@ def diagnostic_latest():
         "finished_at":row[6],
         "note":"v5.4.3 uses targeted discovery queries and no hard supplier-title similarity gate; COGS/markup remains enforced."
     }
+
+@app.get("/pipeline/latest")
+def pipeline_latest():
+    c=db(); row=c.execute("SELECT run_id,category,stage,message,seen,suppliers,accepted,updated_at FROM pipeline ORDER BY run_id DESC LIMIT 1").fetchone(); diagrow=None if not row else c.execute("SELECT diagnostics_json FROM hunt_diagnostics WHERE run_id=?",(row[0],)).fetchone(); c.close()
+    if not row: return {"status":"success","stage":"idle","message":"No hunt has run yet","seen":0,"suppliers":0,"accepted":0,"run_id":None,"diagnostics":{}}
+    try: diagnostics=json.loads(diagrow[0]) if diagrow else {}
+    except: diagnostics={}
+    return {"status":"success","run_id":row[0],"category":row[1],"stage":row[2],"message":row[3],"seen":row[4],"suppliers":row[5],"accepted":row[6],"updated_at":row[7],"diagnostics":diagnostics}
+
+@app.get("/scraper-data/latest")
+def scraper_data_latest(limit:int=25):
+    c=db(); rows=c.execute("SELECT run_id,source,fetched_at,item_count,sample_json FROM scraper_snapshots ORDER BY id DESC LIMIT 2").fetchall(); c.close()
+    out=[]
+    for r in rows:
+        try: sample=json.loads(r[4])
+        except: sample=[]
+        out.append({"run_id":r[0],"source":r[1],"fetched_at":r[2],"item_count":r[3],"sample":sample[:max(1,min(limit,50))]})
+    return {"status":"success","snapshots":out}
 
 @app.get("/products/accepted")
 def accepted(limit:int=50,category:Optional[str]=None): return {"status":"success","count":len(products(limit,category)),"products":products(limit,category)}
