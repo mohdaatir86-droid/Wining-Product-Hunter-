@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b10">
+<title>Product Hunter AI — Command Center v6.3</title>
+<style>
+:root{--bg:#080b10;--p:#10161f;--p2:#151d28;--l:#293443;--t:#f4f7fb;--m:#8e9aaa;--g:#a6e36d;--o:#ffc66d;--r:#ff7f8a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.app{max-width:1200px;margin:auto;min-height:100vh;padding-bottom:65px}
+header{position:sticky;top:0;z-index:10;background:#080b10ee;backdrop-filter:blur(15px);border-bottom:1px solid var(--l);padding:13px 17px;display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;gap:10px;align-items:center}.logo{width:40px;height:40px;border-radius:12px;background:var(--g);color:#111;display:grid;place-items:center;font-weight:950}.brand b{display:block;font-size:17px}.brand small{color:var(--m);font-size:9px;letter-spacing:1.4px}
+.status{padding:8px 11px;border:1px solid var(--l);border-radius:99px;font-size:12px}.online{color:var(--g)}.offline{color:var(--r)}
+main{padding:16px}.tabs{display:flex;gap:7px;overflow:auto;padding-bottom:14px}.tabs button{white-space:nowrap;background:#111721;color:#aeb8c9;border:1px solid var(--l);padding:9px 12px;border-radius:99px}.tabs button.active{background:#27391f;color:var(--g);border-color:#58733d}
+.screen{display:none}.screen.active{display:block}.hero{padding:20px 0}.eyebrow{color:var(--g);font-weight:850;font-size:11px;letter-spacing:1.5px}.hero h1{font-size:38px;line-height:1.05;margin:8px 0}.hero p,.muted{color:var(--m);line-height:1.5}
+.panel,.card,.stat,.pipeline,.raw,.rule{background:linear-gradient(180deg,#111821,#0e141c);border:1px solid var(--l);border-radius:16px;padding:15px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{margin-bottom:10px}.field label{display:block;color:var(--m);font-size:11px;margin-bottom:6px}input,select{width:100%;background:#0b1017;color:#fff;border:1px solid #303b49;border-radius:10px;padding:10px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:9px}.primary,.secondary{border-radius:11px;padding:11px 14px;font-weight:850}.primary{background:var(--g);color:#11170d;border:0}.secondary{background:#18212d;color:#dbe5f2;border:1px solid var(--l)}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:12px 0}.stat small{color:var(--m)}.stat b{display:block;font-size:24px;margin-top:5px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.card h3{margin:0 0 5px}.score{font-size:29px;font-weight:950;color:var(--g)}.row{display:flex;justify-content:space-between;border-top:1px solid #202936;padding:8px 0;font-size:12px}.pill{display:inline-block;padding:5px 8px;border-radius:99px;background:#202a36;font-size:10px;font-weight:850}.winner{background:#263b1e;color:var(--g)}.watch{color:var(--o)}.reject{color:var(--r)}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:20px 0 10px}.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.step{padding:11px;border:1px solid var(--l);border-radius:12px;background:#0b1017}.step b{display:block;font-size:11px}.step span{display:block;color:#778393;font-size:10px;margin-top:4px}.step.live{border-color:#789b52}.step.done b{color:var(--g)}
+.raw{overflow:auto}.raw pre{white-space:pre-wrap;word-break:break-word;color:#b9c7d8;font-size:11px;line-height:1.5;max-height:500px}.notice{padding:12px;border:1px solid #344152;background:#101822;border-radius:12px;color:#aebaca;font-size:11px;line-height:1.5}
+.tablewrap{overflow:auto;border:1px solid var(--l);border-radius:14px}table{width:100%;border-collapse:collapse;min-width:680px}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--l);font-size:11px}th{color:var(--m)}
+.rules{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.rule b{display:block;margin-bottom:7px}.rule span{color:var(--m);font-size:12px;line-height:1.5}.product-click{cursor:pointer}.product-click:active{transform:scale(.995)}.thumb{width:100%;aspect-ratio:1.2/1;object-fit:cover;border-radius:12px;background:#0b1017;display:block;margin-bottom:10px}.detailOverlay{position:fixed;inset:0;background:#000b;backdrop-filter:blur(8px);z-index:50;display:none;overflow:auto;padding:18px}.detailOverlay.open{display:block}.detail{max-width:760px;margin:0 auto;background:#0f161f;border:1px solid var(--l);border-radius:18px;padding:16px}.detailTop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.close{background:#1b2531;color:#fff;border:1px solid var(--l);border-radius:10px;padding:8px 10px}.detailImg{width:100%;max-height:430px;object-fit:contain;background:#0a0f15;border-radius:14px;margin:12px 0}.detailGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.metric{padding:12px;border:1px solid var(--l);border-radius:12px;background:#0b1118}.metric small{display:block;color:var(--m);margin-bottom:5px}.metric b{font-size:17px}.sourceLink{word-break:break-all}.tiny{font-size:10px;color:#6f7b8b}.sectionGap{margin-top:14px}@media(max-width:600px){.detailGrid{grid-template-columns:1fr}}.bottom{position:fixed;bottom:0;left:0;right:0;background:#080b10ee;border-top:1px solid var(--l);padding:9px;text-align:center;color:#697585;font-size:10px}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.steps{grid-template-columns:1fr 1fr}.rules{grid-template-columns:1fr}.hero h1{font-size:30px}}@media(max-width:500px){.grid{grid-template-columns:1fr}.hero{padding:12px 0}}
+
+.star{background:none;border:0;color:var(--o);font-size:21px;line-height:1;padding:0 2px;cursor:pointer}
+.br{display:grid;grid-template-columns:minmax(70px,120px) 1fr auto;gap:8px;align-items:center;margin:9px 0 2px;font-size:12px}.br b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.br .tr{background:#202a36;border-radius:5px;overflow:hidden;height:9px}.br i{display:block;height:100%;background:var(--g);border-radius:5px}.insights{margin:12px 0}.insights li{margin:5px 0}.k3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:12px 0}.chkline{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--m)}.chkline label{display:flex;gap:6px;align-items:center;margin:0}.chkline input{width:auto}
+.verdictBox{margin-top:10px;padding:11px 13px;border-radius:12px;font-weight:800;font-size:13px}.vgo{background:#263b1e;color:var(--g)}.vno{background:#3a2226;color:var(--r)}.vwa{background:#3a301c;color:var(--o)}
+.listbox ul{margin:6px 0 0;padding-left:18px;color:#c9d4e2;line-height:1.7;font-size:13px}
+@media(max-width:800px){.k3{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="brand"><div class="logo">PH</div><div><b>Product Hunter AI</b><small>COMMERCE COMMAND CENTER</small></div></div><div id="backendStatus" class="status">Checking…</div></header>
+<main>
+<nav class="tabs">
+<button class="active" data-tab="dashboard">Dashboard</button><button data-tab="hunt">AI Hunt</button><button data-tab="winners">Winners</button><button data-tab="pipeline">Pipeline</button><button data-tab="scraper">Scraper Data</button><button data-tab="history">History</button><button data-tab="finder">Finder</button><button data-tab="profit">Profit</button><button data-tab="suppliers">Suppliers</button><button data-tab="ads">Ads &amp; Angles</button><button data-tab="tests">Test Tracker</button><button data-tab="watch">Watchlist</button><button data-tab="rules">Rules</button>
+</nav>
+
+<section id="dashboard" class="screen active">
+<div class="hero"><div class="eyebrow">14-POINT WINNER ENGINE</div><h1>Find products worth testing.</h1><p>Discovery, supplier data, scoring, economics and transparency in one command center.</p><div class="actions"><button class="primary" onclick="showTab('hunt')">🚀 Start AI Hunt</button><button class="secondary" onclick="refreshAll()">↻ Refresh</button></div></div>
+<div class="kpis"><div class="stat"><small>Accepted</small><b id="kAccepted">—</b></div><div class="stat"><small>Winners</small><b id="kWinners">—</b></div><div class="stat"><small>Avg Score</small><b id="kAvg">—</b></div><div class="stat"><small>Hunts</small><b id="kHunts">—</b></div><div class="stat"><small>Backend</small><b id="kBackend">—</b></div></div>
+<div id="dashSummary"></div>
+<div class="section-title"><h2>Top Opportunities</h2><button class="secondary" onclick="showTab('winners')">View Winners</button></div><div id="dashCards" class="cards"><div class="notice">Loading…</div></div>
+<div class="section-title"><h2>Live Processing</h2><button class="secondary" onclick="showTab('pipeline')">Pipeline</button></div><div id="dashPipeline" class="pipeline"></div>
+</section>
+
+<section id="hunt" class="screen">
+<div class="section-title"><div><h2>AI Product Hunt</h2><div class="muted">Kitchen Utility + Home Décor</div></div></div>
+<div class="panel"><div class="grid">
+<div class="field"><label>Category</label><select id="category"><option value="all">Both Categories</option><option value="kitchen_utility">Kitchen Utility</option><option value="home_decor">Home Décor</option></select></div>
+<div class="field"><label>Keyword</label><input id="keyword" placeholder="Blank = automatic discovery"></div>
+<div class="field"><label>Country / Market</label><select id="market"><option value="US">🇺🇸 US — USD</option><option value="IN">🇮🇳 India — INR</option><option value="GB">🇬🇧 UK — GBP</option><option value="CA">🇨🇦 Canada — CAD</option><option value="AU">🇦🇺 Australia — AUD</option><option value="DE">🇩🇪 Germany — EUR</option><option value="AE">🇦🇪 UAE — AED</option><option value="SA">🇸🇦 Saudi Arabia — SAR</option></select></div>
+<div class="field"><label>Max Products</label><input id="maxProducts" type="number" value="20"></div>
+<div class="field"><label>Maximum COGS</label><input id="maxCogs" type="number" value="35"></div>
+<div class="field"><label>Minimum Markup</label><input id="markup" type="number" value="3" step=".1"></div>
+<div class="field"><label>Minimum Rating</label><input id="rating" type="number" value="4" step=".1"></div>
+<div class="field"><label>Minimum Reviews</label><input id="reviews" type="number" value="50"></div>
+<div class="field"><label>Accept Score ≥</label><input id="score" type="number" value="60"></div>
+</div><div class="notice" style="margin-top:8px">💡 Price is a data point, not a filter. Every price band returned by the selected market can be reviewed and you choose manually.</div><div class="actions"><button id="runBtn" class="primary" onclick="runHunt()">🚀 RUN AI HUNT</button><button class="secondary" onclick="runAuto('all')">⚡ AUTO HUNT</button><span id="huntMsg" class="muted">Ready</span></div></div>
+<div class="section-title"><h3>Hunt Results</h3><button class="secondary" onclick="refreshAccepted()">↻ Refresh</button></div><div id="huntResults" class="cards"><div class="notice">Run a hunt to see products.</div></div>
+</section>
+
+<section id="winners" class="screen"><div class="section-title"><div><h2>🏆 Winners</h2><div class="muted">Highest opportunity products</div></div><button class="secondary" onclick="refreshWinners()">↻ Refresh</button></div><div id="winnerCards" class="cards"><div class="notice">Loading…</div></div></section>
+
+<section id="pipeline" class="screen">
+<div class="section-title"><div><h2>🔄 Processing Transparency</h2><div class="muted">See where processing is working or failing.</div></div><button class="secondary" onclick="refreshPipeline()">↻ Refresh</button></div>
+<div id="pipelineBox" class="pipeline"></div>
+<div class="kpis"><div class="stat"><small>Demand Seen</small><b id="pDemand">—</b></div><div class="stat"><small>Supplier Records</small><b id="pSupplier">—</b></div><div class="stat"><small>Accepted</small><b id="pAccepted">—</b></div><div class="stat"><small>Rejected</small><b id="pRejected">—</b></div><div class="stat"><small>Errors</small><b id="pErrors">—</b></div></div>
+<div id="pipelineRaw" class="raw"><pre>Waiting for pipeline…</pre></div>
+</section>
+
+<section id="scraper" class="screen">
+<div class="section-title"><div><h2>🔍 Scraper Data</h2><div class="muted">Actual data returned by scraper APIs.</div></div><button class="secondary" onclick="refreshScraper()">↻ Refresh</button></div>
+<div class="notice">Raw transparency view. It helps verify whether Crawlbase or fallback sources actually return product records.</div>
+<div id="scraperMeta" class="kpis"></div><div id="scraperBox" class="raw"><pre>Waiting for scraper data…</pre></div>
+</section>
+
+<section id="history" class="screen">
+<div class="section-title"><div><h2>📜 Hunt History</h2><div class="muted">Previous hunts and outcomes.</div></div><button class="secondary" onclick="refreshHistory()">↻ Refresh</button></div>
+<div id="historyTable" class="tablewrap"><table><thead><tr><th>Time</th><th>Category</th><th>Keyword</th><th>Products</th><th>Accepted</th><th>Status</th></tr></thead><tbody><tr><td colspan="6">Loading…</td></tr></tbody></table></div>
+</section>
+
+
+<section id="finder" class="screen">
+<div class="section-title"><div><h2>🔎 Product Finder</h2><div class="muted">Filter every product your hunts have accepted.</div></div><button class="secondary" onclick="exportCSV()">⬇ CSV</button></div>
+<div class="panel"><div class="grid">
+<div class="field"><label>Search</label><input id="fq" oninput="runFinder()" placeholder="Product or supplier"></div>
+<div class="field"><label>Category</label><select id="fcat" onchange="runFinder()"></select></div>
+<div class="field"><label>Market</label><select id="fmkt" onchange="runFinder()"></select></div>
+<div class="field"><label>Score band</label><select id="fver" onchange="runFinder()"><option value="0">All scores</option><option value="60">Watch and above (60+)</option><option value="70">Test and above (70+)</option><option value="80">Strong winners (80+)</option><option value="90">Exceptional (90+)</option></select></div>
+<div class="field"><label>Selling price from</label><input id="fpmin" type="number" oninput="runFinder()"></div>
+<div class="field"><label>Selling price to</label><input id="fpmax" type="number" oninput="runFinder()"></div>
+<div class="field"><label>Min markup (×)</label><input id="fmk" type="number" step=".1" oninput="runFinder()"></div>
+<div class="field"><label>Max COGS</label><input id="fcg" type="number" oninput="runFinder()"></div>
+<div class="field"><label>Min rating</label><input id="frt" type="number" step=".1" oninput="runFinder()"></div>
+<div class="field"><label>Min reviews</label><input id="frv" type="number" oninput="runFinder()"></div>
+<div class="field"><label>Min supplier match</label><input id="fsm" type="number" oninput="runFinder()"></div>
+<div class="field"><label>Sort by</label><select id="fsort" onchange="runFinder()"><option value="score">Score</option><option value="markup">Markup</option><option value="rating">Rating</option><option value="reviews">Reviews</option><option value="sales7">Sales 7 days</option><option value="plow">Price low to high</option><option value="phigh">Price high to low</option></select></div>
+</div>
+<div class="chkline"><label><input type="checkbox" id="fsales" onchange="runFinder()"> Has sales data</label><label><input type="checkbox" id="fsup" onchange="runFinder()"> Supplier identified</label><label><input type="checkbox" id="fwatch" onchange="runFinder()"> Watchlist only</label></div>
+<div class="actions"><button class="secondary" onclick="resetFinder()">Reset filters</button><span id="fCount" class="muted"></span></div></div>
+<div id="fList" class="cards sectionGap"></div>
+</section>
+
+<section id="profit" class="screen">
+<div class="section-title"><div><h2>💰 Profit Calculator</h2><div class="muted">Real profit after shipping, fees, returns and ads.</div></div></div>
+<div class="panel"><div class="field"><label>Pick a product (fills the numbers)</label><select id="pfSel" onchange="pfFill()"></select></div>
+<div class="grid">
+<div class="field"><label>Selling price</label><input id="pfP" type="number" step=".01" oninput="pfCalc()"></div>
+<div class="field"><label>Product cost (COGS)</label><input id="pfC" type="number" step=".01" oninput="pfCalc()"></div>
+<div class="field"><label>Shipping + packing</label><input id="pfS" type="number" step=".01" value="0" oninput="pfCalc()"></div>
+<div class="field"><label>Ad cost per order</label><input id="pfA" type="number" step=".01" value="0" oninput="pfCalc()"></div>
+<div class="field"><label>Payment / COD fee %</label><input id="pfF" type="number" step=".1" value="3" oninput="pfCalc()"></div>
+<div class="field"><label>Return / RTO rate %</label><input id="pfR" type="number" step=".1" value="15" oninput="pfCalc()"></div>
+</div>
+<div class="k3"><div class="stat"><small>Profit per order</small><b id="pfPr">—</b></div><div class="stat"><small>Net margin</small><b id="pfMg">—</b></div><div class="stat"><small>Break-even ROAS</small><b id="pfRo">—</b></div><div class="stat"><small>Max ad cost per order</small><b id="pfMx">—</b></div><div class="stat"><small>Profit on 100 orders</small><b id="pf100">—</b></div><div class="stat"><small>Test budget, 30 orders</small><b id="pfTb">—</b></div></div>
+<div id="pfVd" class="verdictBox"></div></div>
+</section>
+
+<section id="suppliers" class="screen">
+<div class="section-title"><div><h2>🏭 Suppliers</h2><div class="muted">Grouped from your accepted products.</div></div></div>
+<div id="supList" class="cards"></div>
+</section>
+
+<section id="ads" class="screen">
+<div class="section-title"><div><h2>🎯 Ads &amp; Angles</h2><div class="muted">Hooks and a test plan for any product.</div></div></div>
+<div class="panel"><div class="field"><label>Product</label><select id="adSel" onchange="drawAds()"></select></div></div>
+<div id="adOut" class="sectionGap"></div>
+</section>
+
+<section id="tests" class="screen">
+<div class="section-title"><div><h2>🧪 Test Tracker</h2><div class="muted">Log your real ad tests. Saved on this device.</div></div></div>
+<div class="panel"><div class="grid">
+<div class="field"><label>Product</label><select id="tSel"></select></div>
+<div class="field"><label>Ad spend</label><input id="tSp" type="number" step=".01"></div>
+<div class="field"><label>Orders</label><input id="tOr" type="number"></div>
+<div class="field"><label>Revenue</label><input id="tRv" type="number" step=".01"></div>
+</div><div class="actions"><button class="primary" onclick="addTest()">Add test</button></div></div>
+<div id="tList" class="cards sectionGap"></div>
+</section>
+
+<section id="watch" class="screen">
+<div class="section-title"><div><h2>⭐ Watchlist</h2><div class="muted">Tap ☆ on any product card to save it here.</div></div></div>
+<div id="watchList" class="cards"></div>
+</section>
+
+<section id="rules" class="screen">
+<div class="section-title"><div><h2>⚙️ Winner Rules</h2><div class="muted">Product Hunter selection engine.</div></div></div>
+<div class="rules">
+<div class="rule"><b>💰 Economics</b><span>Price is displayed, not hard-filtered. Use the 14-point score plus your own judgment; COGS and markup remain visible.</span></div>
+<div class="rule"><b>⭐ Proof of Demand</b><span>Minimum 4.0 rating and 50+ reviews. Successful existing sellers are a positive signal.</span></div>
+<div class="rule"><b>🎯 Golden Customer</b><span>Clear customer plus an obvious pain or passion point.</span></div>
+<div class="rule"><b>🔥 Wow Factor</b><span>Strong perceived value and differentiation.</span></div>
+<div class="rule"><b>📦 Logistics</b><span>Small, lightweight and easy to ship. Avoid electronics and fragile/glass products.</span></div>
+<div class="rule"><b>🌱 Evergreen</b><span>Avoid seasonal products. Prefer frequent or repeat-use products.</span></div>
+<div class="rule"><b>🎥 Content Potential</b><span>Products that can be demonstrated effectively in short-form content.</span></div>
+<div class="rule"><b>🏆 Score Bands</b><span>0–59 Reject · 60–69 Watch · 70–79 Test · 80–89 Strong Winner · 90–100 Exceptional.</span></div>
+</div>
+</section>
+</main>
+<div id="detailOverlay" class="detailOverlay" onclick="if(event.target.id==='detailOverlay')closeProduct()"><div id="detailBody" class="detail"><div class="notice">Select a product to view intelligence.</div></div></div><div class="bottom">Product Hunter AI · Crawlbase primary · Price unfiltered · Sales snapshots + transparency enabled</div>
+</div>
+
+<script>
+const API="https://wining-product-hunter.onrender.com";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+
+async function api(path,opts={}){
+ const r=await fetch(API+path,{cache:"no-store",...opts,headers:{"Content-Type":"application/json",...(opts.headers||{})}});
+ const text=await r.text();let d;try{d=JSON.parse(text)}catch{d={raw:text}};
+ if(!r.ok)throw new Error("HTTP "+r.status+(d.detail?": "+d.detail:""));
+ return d;
+}
+
+function showTab(id){
+ document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+ document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("active",x.dataset.tab===id));
+ $(id).classList.add("active");
+ if(id==="dashboard")drawSummary();
+ if(id==="winners")refreshWinners();
+ if(id==="pipeline")refreshPipeline();
+ if(id==="scraper")refreshScraper();
+ if(id==="history")refreshHistory();
+ if(id==="finder")runFinder();
+ if(id==="profit")pfInit();
+ if(id==="suppliers")drawSuppliers();
+ if(id==="ads")adInit();
+ if(id==="tests")testInit();
+ if(id==="watch")drawWatch();
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+function money(v,cur){return v==null||v===""?"—":`${cur||""} ${Number(v).toFixed(2)}`}
+function productCard(p){
+ const score=Number(p.score||0), verdict=p.verdict||p.label||"—";
+ const cls=score>=80?"winner":score<60?"reject":"watch";
+ const key=encodeURIComponent(p.product_key||"");
+ const cur=p.currency||"";
+ const img=p.image?`<img class="thumb" src="${esc(p.image)}" alt="" loading="lazy" onerror="this.style.display='none'">`:'';
+ const s24=p.sales_last_24h==null?'Collecting':p.sales_last_24h;
+ const s7=p.sales_last_7d==null?'Collecting':p.sales_last_7d;
+ return `<article class="card product-click" onclick="openProduct('${key}')">${img}<div style="display:flex;justify-content:space-between;gap:10px"><div><h3>${esc(p.name||p.title||"Unnamed Product")}</h3><div class="muted">${esc(p.category||"Product")} · ${esc(p.country||p.marketplace||"Market")}</div></div><div style="text-align:right"><div class="score">${esc(score)}</div>${key?`<button class="star" title="Watchlist" onclick="event.stopPropagation();toggleWatch(this,'${key}')">${isWatched(decodeURIComponent(key))?'★':'☆'}</button>`:''}</div></div><p><span class="pill ${cls}">${esc(verdict)}</span> <span class="pill">Tap for intelligence</span></p><div class="row"><span class="muted">Selling</span><b>${esc(money(p.selling_price??p.sellingPrice??p.price,cur))}</b></div><div class="row"><span class="muted">COGS</span><span>${esc(money(p.cost_of_goods??p.costOfGoods??p.cogs,cur))}</span></div><div class="row"><span class="muted">Markup</span><span>${esc(p.markup??"—")}×</span></div><div class="row"><span class="muted">Rating / Reviews</span><span>${esc(p.rating??"—")}★ / ${esc(p.reviews??p.review_count??"—")}</span></div><div class="row"><span class="muted">Sales · 24h / 7d</span><span>${esc(s24)} / ${esc(s7)}</span></div></article>`;
+}
+
+function openProduct(key){
+ if(!key){return}
+ const ov=$('detailOverlay'); ov.classList.add('open'); $('detailBody').innerHTML='<div class="notice">Loading product intelligence…</div>';
+ api('/products/detail/'+key).then(renderDetail).catch(e=>{$('detailBody').innerHTML='<div class="notice">Could not load details: '+esc(e.message)+'</div>'});
+}
+function closeProduct(){ $('detailOverlay').classList.remove('open'); }
+function renderDetail(d){
+ const p=d.product||{}, s=d.sales||{}, dm=s.demand||{}, sm=s.supplier_orders||{};
+ const cur=p.currency||'';
+ const val=(x)=>x==null?'Not available':x;
+ const measured=(x)=>x==null?'Collecting data':x;
+ $('detailBody').innerHTML=`<div class="detailTop"><div><div class="eyebrow">PRODUCT INTELLIGENCE</div><h2 style="margin:5px 0">${esc(p.name||'Unnamed Product')}</h2><div class="muted">${esc(p.category||'Product')} · ${esc(p.marketplace||p.country||'Market')}</div></div><button class="close" onclick="closeProduct()">✕</button></div>
+ ${p.image?`<img class="detailImg" src="${esc(p.image)}" alt="" onerror="this.style.display='none'">`:''}
+ <div class="detailGrid"><div class="metric"><small>Winner Score</small><b>${esc(p.score??'—')} · ${esc(p.verdict??'—')}</b></div><div class="metric"><small>Selling Price</small><b>${esc(money(p.selling_price,cur))}</b></div><div class="metric"><small>COGS</small><b>${esc(money(p.cost_of_goods,cur))}</b></div><div class="metric"><small>Markup</small><b>${esc(p.markup??'—')}×</b></div><div class="metric"><small>Rating</small><b>${esc(p.rating??'—')} ★</b></div><div class="metric"><small>Reviews</small><b>${esc(p.reviews??'—')}</b></div><div class="metric"><small>Demand sales · last 24h</small><b>${esc(measured(dm.last_24h))}</b></div><div class="metric"><small>Demand sales · last 7d</small><b>${esc(measured(dm.last_7d))}</b></div><div class="metric"><small>Supplier orders · last 24h</small><b>${esc(measured(sm.last_24h))}</b></div><div class="metric"><small>Supplier orders · last 7d</small><b>${esc(measured(sm.last_7d))}</b></div><div class="metric"><small>Demand cumulative sales</small><b>${esc(val(dm.latest_cumulative_sales))}</b></div><div class="metric"><small>Data status</small><b>${esc(dm.data_status||'collecting')}</b></div></div>
+ <div class="sectionGap panel"><b>Why this product?</b><div class="muted" style="margin-top:8px">Supplier match ${esc(p.supplier_match_score??'—')} · ${esc(p.supplier_name||'Supplier not identified')}</div><div class="muted" style="margin-top:8px">The 24h/7d sales figures are shown only when repeated source snapshots support them. No sales number is invented.</div></div>
+ <div class="sectionGap panel"><b>Links</b><div class="muted sourceLink" style="margin-top:8px">Demand: ${p.url?`<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url)}</a>`:'—'}</div><div class="muted sourceLink" style="margin-top:8px">Supplier: ${p.supplier_url?`<a href="${esc(p.supplier_url)}" target="_blank" rel="noopener">${esc(p.supplier_url)}</a>`:'—'}</div></div>
+ <div class="sectionGap raw"><pre>${esc(JSON.stringify({breakdown:p.breakdown, demand_snapshots:d.demand_snapshots, supplier_snapshots:d.supplier_snapshots},null,2))}</pre></div>`;
+}
+
+function toArray(d){
+ if(Array.isArray(d))return d;
+ if(Array.isArray(d?.products))return d.products;
+ if(Array.isArray(d?.items))return d.items;
+ if(Array.isArray(d?.results))return d.results;
+ return [];
+}
+
+function renderProducts(d,target){
+ const ps=toArray(d);
+ $(target).innerHTML=ps.length?ps.map(productCard).join(""):'<div class="notice">No products returned.</div>';
+ $("kAccepted").textContent=ps.length;
+ $("kWinners").textContent=ps.filter(p=>Number(p.score||0)>=80||String(p.verdict||"").toUpperCase().includes("WINNER")).length;
+ $("kAvg").textContent=ps.length?(ps.reduce((a,p)=>a+Number(p.score||0),0)/ps.length).toFixed(1):"—";
+ return ps;
+}
+
+async function health(){
+ try{const d=await api("/health");$("backendStatus").className="status online";$("backendStatus").textContent="🟢 Backend "+(d.version||"Online");$("kBackend").textContent="ONLINE"}
+ catch(e){$("backendStatus").className="status offline";$("backendStatus").textContent="🔴 Backend Offline";$("kBackend").textContent="OFFLINE"}
+}
+
+async function refreshAccepted(){
+ try{const d=await api("/products/accepted?limit=100");renderProducts(d,"huntResults");renderProducts(d,"dashCards");ALL=toArray(d);onData()}
+ catch(e){$("huntResults").innerHTML=`<div class="notice">Could not load products: ${esc(e.message)}</div>`}
+}
+
+async function refreshWinners(){
+ try{const d=await api("/products/winners");renderProducts(d,"winnerCards")}
+ catch(e){$("winnerCards").innerHTML=`<div class="notice">Could not load winners: ${esc(e.message)}</div>`}
+}
+
+async function runHunt(){
+ const btn=$("runBtn");btn.disabled=true;btn.textContent="⏳ HUNTING…";$("huntMsg").textContent="Starting pipeline…";showTab("pipeline");
+ try{
+  const category=$("category").value;
+  const body={keyword:$("keyword").value.trim(),marketplace:$("market").value,max_products:Number($("maxProducts").value),max_cogs:Number($("maxCogs").value),min_markup:Number($("markup").value),min_rating:Number($("rating").value),min_reviews:Number($("reviews").value),min_score:Number($("score").value)};
+  await api(category==="all"?"/auto-hunt/all":"/auto-hunt/"+category,{method:"POST",body:JSON.stringify(body)});
+  $("huntMsg").textContent="Hunt completed";await refreshPipeline();await refreshAccepted();await refreshWinners();
+ }catch(e){$("huntMsg").textContent="Failed: "+e.message;await refreshPipeline()}
+ btn.disabled=false;btn.textContent="🚀 RUN AI HUNT";
+}
+
+async function runAuto(cat){
+ showTab("pipeline");
+ try{await api("/auto-hunt/"+cat,{method:"POST",body:JSON.stringify({max_products:20})});await refreshPipeline();await refreshAccepted();await refreshWinners()}
+ catch(e){$("pipelineRaw").innerHTML="<pre>"+esc(e.message)+"</pre>"}
+}
+
+function drawPipeline(d){
+ const stage=String(d?.stage||d?.status||"unknown").toLowerCase();
+ const stages=["scraping","normalizing","filtering","scoring","complete"];
+ let idx=stages.indexOf(stage);if(stage==="completed")idx=4;
+ $("pipelineBox").innerHTML='<div class="steps">'+stages.map((s,i)=>{let done=stage==="complete"||idx>i,live=stage===s;return `<div class="step ${done?"done":""} ${live?"live":""}"><b>${done?"✓ ":live?"⏳ ":""}${s[0].toUpperCase()+s.slice(1)}</b><span>${live?"Current stage":done?"Completed":"Waiting"}</span></div>`}).join("")+"</div>";
+ const c=d?.counters||d?.counts||{};
+ $("pDemand").textContent=c.demand_seen??d?.demand_seen??"—";$("pSupplier").textContent=c.supplier_records??d?.supplier_records??"—";$("pAccepted").textContent=c.accepted??d?.accepted??"—";$("pRejected").textContent=c.rejected??d?.rejected??"—";$("pErrors").textContent=c.errors??d?.errors??"—";
+ $("pipelineRaw").innerHTML="<pre>"+esc(JSON.stringify(d,null,2))+"</pre>";$("dashPipeline").innerHTML=$("pipelineBox").innerHTML;
+}
+
+async function refreshPipeline(){
+ try{drawPipeline(await api("/pipeline/latest"))}
+ catch(e){$("pipelineBox").innerHTML=`<div class="notice">Pipeline endpoint unavailable: ${esc(e.message)}</div>`;$("pipelineRaw").innerHTML="<pre>"+esc(e.message)+"</pre>"}
+}
+
+async function refreshScraper(){
+ try{
+  const d=await api("/scraper-data/latest");$("scraperBox").innerHTML="<pre>"+esc(JSON.stringify(d,null,2))+"</pre>";
+  const c=d?.counters||d?.counts||{};
+  $("scraperMeta").innerHTML=`<div class="stat"><small>Amazon Records</small><b>${esc(c.amazon??d?.amazon_count??"—")}</b></div><div class="stat"><small>AliExpress Records</small><b>${esc(c.aliexpress??d?.aliexpress_count??"—")}</b></div><div class="stat"><small>Source</small><b style="font-size:14px">${esc(d?.source??"—")}</b></div>`;
+ }catch(e){$("scraperBox").innerHTML="<pre>"+esc(e.message)+"</pre>"}
+}
+
+/* HISTORY FIX: never calls .map() until rows is definitely an array */
+async function refreshHistory(){
+ try{
+  const d=await api("/hunt-history?limit=50");
+  let rows=[];
+  if(Array.isArray(d))rows=d;
+  else if(Array.isArray(d?.history))rows=d.history;
+  else if(Array.isArray(d?.hunts))rows=d.hunts;
+  else if(Array.isArray(d?.items))rows=d.items;
+  else if(Array.isArray(d?.results))rows=d.results;
+
+  if(!rows.length){
+   $("historyTable").innerHTML=`<table><thead><tr><th>Time</th><th>Category</th><th>Keyword</th><th>Products</th><th>Accepted</th><th>Status</th></tr></thead><tbody><tr><td colspan="6">No hunt history yet.</td></tr></tbody></table>`;
+   $("kHunts").textContent="0";return;
+  }
+
+  $("historyTable").innerHTML=`<table><thead><tr><th>Time</th><th>Category</th><th>Keyword</th><th>Products</th><th>Accepted</th><th>Status</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.created_at||x.timestamp||x.time||"—")}</td><td>${esc(x.category||"—")}</td><td>${esc(x.keyword||"Automatic")}</td><td>${esc(x.products||x.total_products||x.product_count||"—")}</td><td>${esc(x.accepted||x.accepted_count||"—")}</td><td>${esc(x.status||"—")}</td></tr>`).join("")}</tbody></table>`;
+  $("kHunts").textContent=rows.length;
+ }catch(e){$("historyTable").innerHTML=`<div class="notice">History endpoint error: ${esc(e.message)}</div>`}
+}
+
+async function refreshAll(){
+ await Promise.allSettled([health(),refreshAccepted(),refreshWinners(),refreshPipeline(),refreshHistory()]);
+}
+
+/* ===== v6.2 MASTER TOOLS (work on your accepted products, no backend change needed) ===== */
+let ALL=[];
+const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+const pPrice=p=>num(p.selling_price??p.sellingPrice??p.price);
+const pCogs=p=>num(p.cost_of_goods??p.costOfGoods??p.cogs);
+const pName=p=>p.name||p.title||"Unnamed Product";
+const pKey=p=>p.product_key||pName(p);
+const pCur=p=>p.currency||"";
+const fm=(v,c)=>(c?c+" ":"")+num(v).toFixed(2);
+
+function isWatched(k){return LS.get("ph_watch",[]).includes(k)}
+function toggleWatch(btn,enc){
+ const k=decodeURIComponent(enc);let w=LS.get("ph_watch",[]);
+ if(w.includes(k)){w=w.filter(x=>x!==k);btn.textContent="☆"}else{w.push(k);btn.textContent="★"}
+ LS.set("ph_watch",w);
+}
+function fillSel(id,keepFirst){
+ const el=$(id);if(!el)return;const cur=el.value;
+ el.innerHTML=ALL.length?ALL.map((p,i)=>`<option value="${i}">${esc(pName(p))}</option>`).join(""):'<option value="">No products yet. Run a hunt first.</option>';
+ if(cur&&el.querySelector(`option[value="${cur}"]`))el.value=cur;
+}
+function onData(){
+ const cats=[...new Set(ALL.map(p=>p.category).filter(Boolean))],mk=[...new Set(ALL.map(p=>p.country||p.marketplace).filter(Boolean))];
+ const c=$("fcat").value,m=$("fmkt").value;
+ $("fcat").innerHTML='<option value="">All categories</option>'+cats.map(x=>`<option>${esc(x)}</option>`).join("");
+ $("fmkt").innerHTML='<option value="">All markets</option>'+mk.map(x=>`<option>${esc(x)}</option>`).join("");
+ $("fcat").value=c;$("fmkt").value=m;
+ drawSummary();
+}
+
+/* Finder */
+function finderRows(){
+ const g=id=>$(id).value,n=id=>g(id)===""?null:Number(g(id));
+ const q=g("fq").trim().toLowerCase(),cat=g("fcat"),mk=g("fmkt"),band=Number(g("fver")||0);
+ const pmin=n("fpmin"),pmax=n("fpmax"),mmk=n("fmk"),cg=n("fcg"),rt=n("frt"),rv=n("frv"),sm=n("fsm");
+ const w=LS.get("ph_watch",[]);
+ let r=ALL.filter(p=>{
+  const nm=(pName(p)+" "+(p.supplier_name||"")).toLowerCase();
+  return (!q||nm.includes(q))&&(!cat||p.category===cat)&&(!mk||(p.country||p.marketplace)===mk)
+  &&num(p.score)>=band&&(pmin==null||pPrice(p)>=pmin)&&(pmax==null||pPrice(p)<=pmax)
+  &&(mmk==null||num(p.markup)>=mmk)&&(cg==null||pCogs(p)<=cg)&&(rt==null||num(p.rating)>=rt)
+  &&(rv==null||num(p.reviews??p.review_count)>=rv)&&(sm==null||num(p.supplier_match_score)>=sm)
+  &&(!$("fsales").checked||p.sales_last_7d!=null||p.sales_last_24h!=null)
+  &&(!$("fsup").checked||!!p.supplier_name)&&(!$("fwatch").checked||w.includes(p.product_key));
+ });
+ const s=g("fsort"),f={score:p=>-num(p.score),markup:p=>-num(p.markup),rating:p=>-num(p.rating),reviews:p=>-num(p.reviews??p.review_count),sales7:p=>-num(p.sales_last_7d),plow:p=>pPrice(p),phigh:p=>-pPrice(p)}[s];
+ return r.sort((a,b)=>f(a)-f(b));
+}
+function runFinder(){
+ const r=finderRows();
+ $("fCount").textContent=r.length+" of "+ALL.length+" products match";
+ $("fList").innerHTML=r.length?r.map(productCard).join(""):'<div class="notice">'+(ALL.length?"No products match these filters.":"No products loaded yet. Run an AI Hunt first.")+'</div>';
+}
+function resetFinder(){
+ ["fq","fpmin","fpmax","fmk","fcg","frt","frv","fsm"].forEach(i=>$(i).value="");
+ ["fcat","fmkt"].forEach(i=>$(i).value="");$("fver").value="0";$("fsort").value="score";
+ ["fsales","fsup","fwatch"].forEach(i=>$(i).checked=false);runFinder();
+}
+function exportCSV(){
+ const r=finderRows();if(!r.length)return;
+ const cols=["name","category","market","score","verdict","selling_price","cogs","markup","rating","reviews","supplier","supplier_match","sales_24h","sales_7d","demand_url","supplier_url"];
+ const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+ const lines=[cols.join(",")].concat(r.map(p=>[pName(p),p.category,p.country||p.marketplace,p.score,p.verdict,pPrice(p),pCogs(p),p.markup,p.rating,p.reviews??p.review_count,p.supplier_name,p.supplier_match_score,p.sales_last_24h,p.sales_last_7d,p.url,p.supplier_url].map(q).join(",")));
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv"}));a.download="products.csv";document.body.appendChild(a);a.click();a.remove();
+}
+
+/* Profit */
+function pfInit(){fillSel("pfSel");if(ALL.length&&!$("pfP").value)pfFill();else pfCalc()}
+function pfFill(){const p=ALL[Number($("pfSel").value)];if(!p)return;$("pfP").value=pPrice(p);$("pfC").value=pCogs(p);pfCalc()}
+function pfCalc(){
+ const p=num($("pfP").value),c=num($("pfC").value),s=num($("pfS").value),a=num($("pfA").value),fee=num($("pfF").value)/100,rto=num($("pfR").value)/100;
+ const cur=(ALL[Number($("pfSel").value)]||{}).currency||"";
+ const contrib=(1-rto)*(p-c-s-p*fee)-rto*s, profit=contrib-a;
+ $("pfPr").textContent=fm(profit,cur);$("pfMg").textContent=(p?profit/p*100:0).toFixed(0)+"%";
+ $("pfRo").textContent=contrib>0?(p/contrib).toFixed(2)+"×":"—";$("pfMx").textContent=fm(Math.max(0,contrib),cur);
+ $("pf100").textContent=fm(profit*100,cur);$("pfTb").textContent=fm(a*30,cur);
+ const v=$("pfVd");
+ if(!p){v.className="verdictBox";v.textContent="";return}
+ if(profit>0&&profit/p>=0.15){v.className="verdictBox vgo";v.textContent="Worth a small test. Start with about 30 orders."}
+ else if(profit>0){v.className="verdictBox vwa";v.textContent="Thin margin. Raise the price or cut ad cost before scaling."}
+ else{v.className="verdictBox vno";v.textContent="Loses money per order at these numbers. Do not test yet."}
+}
+
+/* Suppliers */
+function drawSuppliers(){
+ const m={};
+ ALL.forEach(p=>{const k=p.supplier_name||"Supplier not identified";(m[k]=m[k]||{n:k,items:[],url:p.supplier_url}).items.push(p)});
+ const rows=Object.values(m).sort((a,b)=>b.items.length-a.items.length);
+ $("supList").innerHTML=rows.length?rows.map(s=>{
+  const ms=s.items.map(p=>num(p.supplier_match_score)).filter(x=>x>0),avgM=ms.length?(ms.reduce((a,b)=>a+b,0)/ms.length).toFixed(0):"—";
+  const avgS=(s.items.reduce((a,p)=>a+num(p.score),0)/s.items.length).toFixed(0);
+  return `<article class="card"><h3>${esc(s.n)}</h3><div class="muted">${s.items.length} product${s.items.length>1?"s":""}</div><div class="row"><span class="muted">Avg winner score</span><b>${avgS}</b></div><div class="row"><span class="muted">Avg supplier match</span><b>${avgM}</b></div><div class="row"><span class="muted">Products</span><span style="text-align:right">${s.items.slice(0,4).map(p=>esc(pName(p))).join("<br>")}</span></div>${s.url?`<div class="row"><span class="muted">Link</span><a class="sourceLink" href="${esc(s.url)}" target="_blank" rel="noopener">Open supplier</a></div>`:""}</article>`}).join(""):'<div class="notice">No suppliers yet. Run a hunt first.</div>';
+}
+
+/* Ads */
+function adInit(){fillSel("adSel");drawAds()}
+function drawAds(){
+ const p=ALL[Number($("adSel").value)];if(!p){$("adOut").innerHTML='<div class="notice">Run a hunt first to get products.</div>';return}
+ const n=pName(p),cur=pCur(p),price=fm(pPrice(p),cur),b=Number(p.reviews??p.review_count)||0;
+ const hooks=[["Problem hook","Tired of the same daily hassle? Meet the "+n+"."],["Before and after","Show the mess, then the "+n+" in use. Keep it under 15 seconds."],["Price angle","Only "+price+" for the "+n+"."],["Social proof",(b?b.toLocaleString()+" buyers have rated it "+(p.rating??"high")+" stars. ":"")+"Show real reviews on screen."],["Gift angle","A small gift people use every single day."]];
+ $("adOut").innerHTML=`<div class="panel listbox"><b>Hooks to test</b><ul>${hooks.map(h=>`<li><b>${esc(h[0])}:</b> ${esc(h[1])}</li>`).join("")}</ul></div><div class="panel listbox sectionGap"><b>Test plan</b><ul><li>Test 3 hooks with the same audience.</li><li>Run each for 3 days at a small, equal budget.</li><li>Stop any hook with no add-to-cart after spending about 2× your target cost per order.</li><li>Scale the winner by 20% per day while ROAS stays above break-even.</li><li>Use the Profit tab to get your break-even ROAS for this product.</li></ul></div>`;
+}
+
+/* Test tracker */
+function testInit(){fillSel("tSel");drawTests()}
+function addTest(){
+ const p=ALL[Number($("tSel").value)];if(!p)return;
+ const cur=pCur(p),pr=pPrice(p),c=pCogs(p),rto=.15,fee=.03;
+ const contrib=(1-rto)*(pr-c-pr*fee);
+ const t=LS.get("ph_tests",[]);
+ t.unshift({n:pName(p),cur,sp:num($("tSp").value),or:num($("tOr").value),rv:num($("tRv").value),contrib,be:contrib>0?pr/contrib:null,at:new Date().toISOString().slice(0,10)});
+ LS.set("ph_tests",t);drawTests();
+}
+function delTest(i){const t=LS.get("ph_tests",[]);t.splice(i,1);LS.set("ph_tests",t);drawTests()}
+function drawTests(){
+ const t=LS.get("ph_tests",[]);
+ $("tList").innerHTML=t.length?t.map((x,i)=>{
+  const roas=x.sp?x.rv/x.sp:0;let cls="vwa",msg="Keep watching or change the hook.";
+  if(x.be==null){cls="vno";msg="This product is not profitable at standard costs."}
+  else if(roas>=x.be&&x.or>0){cls="vgo";msg="Profitable. Scale carefully, about +20% budget."}
+  else if(x.or===0&&x.contrib>0&&x.sp>=2*x.contrib){cls="vno";msg="Kill it. Spent 2× the allowed cost with no sales."}
+  return `<article class="card"><h3>${esc(x.n)}</h3><div class="muted">${esc(x.at)}</div><div class="row"><span class="muted">Spend / Orders</span><span>${esc(fm(x.sp,x.cur))} / ${x.or}</span></div><div class="row"><span class="muted">Revenue</span><span>${esc(fm(x.rv,x.cur))}</span></div><div class="row"><span class="muted">ROAS / Break-even</span><b>${roas.toFixed(2)}× / ${x.be?x.be.toFixed(2)+"×":"—"}</b></div><div class="verdictBox ${cls}">${msg}</div><div class="actions"><button class="secondary" onclick="delTest(${i})">Delete</button></div></article>`}).join(""):'<div class="notice">No tests yet. Add your first test above.</div>';
+}
+
+/* Watchlist */
+function drawWatch(){
+ const w=LS.get("ph_watch",[]),r=ALL.filter(p=>w.includes(p.product_key));
+ $("watchList").innerHTML=r.length?r.map(productCard).join(""):'<div class="notice">Nothing saved yet. Tap ☆ on a product card.</div>';
+}
+/* ===== end v6.2 ===== */
+
+/* ===== v6.3 DASHBOARD SUMMARY ===== */
+const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch(e){return ""}};
+function groupBy(arr,fn){
+ const m={};arr.forEach(p=>{const k=fn(p)||"Unknown";(m[k]=m[k]||[]).push(p)});
+ return Object.keys(m).map(k=>{const v=m[k],n=v.length,s=f=>v.reduce((a,p)=>a+f(p),0);
+  return{k,n,s7:s(p=>num(p.sales_last_7d)),rv:s(p=>num(p.reviews??p.review_count)),sc:s(p=>num(p.score))/n,rt:s(p=>num(p.rating))/n,mk:s(p=>num(p.markup))/n}});
+}
+function barList(rows,useSales){
+ const val=r=>useSales?r.s7:r.rv;rows=rows.slice().sort((a,b)=>val(b)-val(a)).slice(0,6);
+ const max=Math.max(1,...rows.map(val));
+ return rows.map(r=>`<div class="br"><b title="${esc(r.k)}">${esc(r.k)}</b><div class="tr"><i style="width:${Math.max(3,val(r)/max*100)}%"></i></div><span>${val(r).toLocaleString()}</span></div><div class="tiny">${r.n} product${r.n>1?"s":""} · score ${r.sc.toFixed(0)} · ${r.rt.toFixed(1)}★ · markup ${r.mk.toFixed(1)}×</div>`).join("");
+}
+function simpleBars(items){
+ const max=Math.max(1,...items.map(i=>i.n));
+ return items.map(i=>`<div class="br"><b title="${esc(i.k)}">${esc(i.k)}</b><div class="tr"><i style="width:${i.n?Math.max(3,i.n/max*100):0}%"></i></div><span>${i.n}</span></div>`).join("");
+}
+function drawSummary(){
+ const box=$("dashSummary");if(!box)return;
+ if(!ALL.length){box.innerHTML='<div class="notice" style="margin:12px 0">The summary appears after your first hunt has accepted products.</div>';return}
+ const n=ALL.length,sum=f=>ALL.reduce((a,p)=>a+f(p),0),cur=pCur(ALL[0]);
+ const useSales=ALL.some(p=>num(p.sales_last_7d)>0);
+ const byPlat=groupBy(ALL,p=>hostOf(p.url)||p.marketplace||p.country);
+ const bySup=groupBy(ALL,p=>hostOf(p.supplier_url)||"No supplier link");
+ const byCat=groupBy(ALL,p=>p.category);
+ const val=r=>useSales?r.s7:r.rv;
+ const topPlat=byPlat.slice().sort((a,b)=>val(b)-val(a))[0];
+ const band=s=>s<60?"Reject (0–59)":s<70?"Watch (60–69)":s<80?"Test (70–79)":s<90?"Strong (80–89)":"Exceptional (90+)";
+ const bandNames=["Reject (0–59)","Watch (60–69)","Test (70–79)","Strong (80–89)","Exceptional (90+)"];
+ const bands=bandNames.map(k=>({k,n:ALL.filter(p=>band(num(p.score))===k).length}));
+ const prices=ALL.map(pPrice).filter(x=>x>0),pmin=Math.min(...prices),pmax=Math.max(...prices),step=(pmax-pmin)/4||1;
+ const pb=[0,1,2,3].map(i=>{const lo=pmin+step*i,hi=i===3?pmax:pmin+step*(i+1);return{k:fm(lo,"")+" – "+fm(hi,""),n:prices.filter(x=>i===3?x>=lo&&x<=hi:x>=lo&&x<hi).length}});
+ const withBoth=ALL.filter(p=>pPrice(p)>0&&pCogs(p)>0).sort((a,b)=>num(b.markup)-num(a.markup)||b.score-a.score);
+ const best=withBoth[0],topScore=ALL.slice().sort((a,b)=>num(b.score)-num(a.score))[0];
+ const low=ALL.filter(p=>num(p.markup)>0&&num(p.markup)<3).length;
+ const tests=LS.get("ph_tests",[]),tSp=tests.reduce((a,t)=>a+t.sp,0),tRv=tests.reduce((a,t)=>a+t.rv,0),watch=LS.get("ph_watch",[]).length;
+ const s7=sum(p=>num(p.sales_last_7d));
+ const ins=[];
+ if(topPlat)ins.push(`Highest demand platform: <b>${esc(topPlat.k)}</b> (${val(topPlat).toLocaleString()} ${useSales?"sales in 7 days":"total reviews"}, ${topPlat.n} products).`);
+ if(topScore)ins.push(`Top scoring product: <b>${esc(pName(topScore))}</b> (${esc(topScore.score)}).`);
+ if(best)ins.push(`Best markup: <b>${esc(pName(best))}</b> (${esc(best.markup)}× · sells ${esc(fm(pPrice(best),cur))}, costs ${esc(fm(pCogs(best),cur))}).`);
+ ins.push(`${low} product${low===1?"":"s"} below 3× markup.`);
+ if(!useSales)ins.push("Sales numbers are still being collected, so demand is ranked by total reviews for now.");
+ if(tests.length)ins.push(`Your tests: spent ${esc(fm(tSp,cur))}, revenue ${esc(fm(tRv,cur))}, ROAS ${tSp?(tRv/tSp).toFixed(2):"—"}×.`);
+ const rows=withBoth.slice(0,10).map(p=>{const g=pPrice(p)-pCogs(p);return`<tr><td>${esc(pName(p))}</td><td>${esc(hostOf(p.url)||p.marketplace||"—")}</td><td>${esc(fm(pPrice(p),pCur(p)))}</td><td>${esc(hostOf(p.supplier_url)||"—")}</td><td>${esc(fm(pCogs(p),pCur(p)))}</td><td>${esc(fm(g,pCur(p)))}</td><td>${esc(p.markup??"—")}×</td><td>${(g/pPrice(p)*100).toFixed(0)}%</td></tr>`}).join("");
+ const st=(a,b)=>`<div class="stat"><small>${a}</small><b>${b}</b></div>`;
+ box.innerHTML=`<div class="section-title"><h2>📊 Everything at a glance</h2></div>
+ <div class="k3">${st("Products",n)}${st("Avg selling price",esc(fm(sum(pPrice)/n,cur)))}${st("Avg supplier cost",esc(fm(sum(pCogs)/n,cur)))}${st("Avg markup",(sum(p=>num(p.markup))/n).toFixed(1)+"×")}${st("Avg rating",(sum(p=>num(p.rating))/n).toFixed(1)+"★")}${st("Total reviews",sum(p=>num(p.reviews??p.review_count)).toLocaleString())}${st("Sales tracked, 7 days",useSales?s7.toLocaleString():"Collecting")}${st("Watchlist",watch)}${st("Tests logged",tests.length)}</div>
+ <div class="panel insights"><b>Key insights</b><ul style="margin:8px 0 0;padding-left:18px;line-height:1.6">${ins.map(x=>"<li>"+x+"</li>").join("")}</ul></div>
+ <div class="cards">
+ <div class="panel"><b>Demand by platform</b><div class="tiny">${useSales?"Ranked by sales in the last 7 days":"Ranked by total reviews"}</div>${barList(byPlat,useSales)}</div>
+ <div class="panel"><b>Supplier platforms</b><div class="tiny">Where your supply comes from</div>${barList(bySup,useSales)}</div>
+ <div class="panel"><b>Demand by category</b><div class="tiny">${useSales?"Sales in 7 days":"Total reviews"}</div>${barList(byCat,useSales)}</div>
+ <div class="panel"><b>Score bands</b><div class="tiny">How many products fall in each band</div>${simpleBars(bands)}</div>
+ <div class="panel"><b>Price bands</b><div class="tiny">Selling price spread (${esc(cur)})</div>${simpleBars(pb)}</div>
+ </div>
+ <div class="section-title"><h3>💱 Price comparison: demand vs supplier</h3></div>
+ <div class="tablewrap"><table><thead><tr><th>Product</th><th>Demand platform</th><th>Selling price</th><th>Supplier</th><th>Supplier cost</th><th>Gap</th><th>Markup</th><th>Gross margin</th></tr></thead><tbody>${rows||'<tr><td colspan="8">No products with both prices yet.</td></tr>'}</tbody></table></div>`;
+}
+/* ===== end v6.3 ===== */
+
+health();refreshAll();
+</script>
+</body>
+</html>
