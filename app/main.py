@@ -107,17 +107,13 @@ def price_of(x):
     return num(v)
 
 def rating_of(x):
-    v = first(x,["rating","stars","starRating","star_rating","customerRating"],0)
-    if isinstance(v,dict):
-        v = first(v,["average","value","rating"],0)
-    return num(v)
+    r=num(first(x,["rating","stars","starRating","star_rating","customerReview","customer_review","averageRating","average_rating","averageStar","evaluateRate"],0),0)
+    if 5<r<=100: r=r/20
+    return r if r<=5 else 0
 
-def reviews_of(x):
-    v = first(x,["reviews","reviewCount","review_count","ratingsTotal","ratings_total",
-                 "orders","orderCount","order_count","customerReviewCount"],0)
-    if isinstance(v,dict):
-        v = first(v,["reviewsCount","count","total"],0)
-    return integer(v)
+
+def reviews_of(x): return integer(first(x,["reviews","reviewCount","review_count","ratingsTotal","ratings_total","customerReviewCount","customer_review_count","reviewsCount","reviews_count","totalReviews","orders","orderCount","order_count","soldCount","sold","tradeCount"],0))
+
 
 def desc_of(x):
     return str(first(x,["description","productDescription","product_description",
