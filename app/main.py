@@ -7,7 +7,7 @@ import os, re, unicodedata, httpx, sqlite3, hashlib, json, asyncio, time
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
-VERSION="5.4.1"
+VERSION="5.4.2"
 DB_PATH=os.getenv("PRODUCT_HUNTER_DB","product_hunter.db")
 
 app=FastAPI(title="Product Hunter API", version=VERSION)
