@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Product Hunter AI</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#111827;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.wrap{max-width:760px;margin:auto;padding:22px 16px 50px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+h1{font-size:30px;margin:0 0 4px}.sub{color:#64748b;font-size:15px}.badge{background:#dcfce7;color:#166534;padding:10px 14px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap}
+.panel{background:white;border-radius:20px;padding:18px;box-shadow:0 8px 30px #0000000b;margin-bottom:18px}
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{border:0;border-radius:13px;padding:15px 12px;font-size:15px;font-weight:750;background:#e8edf7;color:#172033}.primary{grid-column:1/-1;background:#111827;color:white}.btn:disabled{opacity:.55}
+.status{margin-top:14px;color:#64748b;font-size:14px;line-height:1.45}.ok{color:#166534}.err{color:#b91c1c}
+.count{font-size:26px;font-weight:800;margin-bottom:4px}.muted{color:#64748b}.card{background:white;border-radius:18px;padding:17px;margin-top:12px;box-shadow:0 6px 24px #00000009}.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eef2f7;font-size:14px}.row:last-child{border:0}.score{font-size:25px;font-weight:850}.pill{display:inline-block;background:#eef2ff;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:750}
+a{color:inherit;text-decoration:none}.empty{text-align:center;padding:28px 10px;color:#64748b}
+@media(max-width:520px){.top{align-items:flex-start}.badge{font-size:12px;padding:8px 10px}h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>Product Hunter AI</h1><div class="sub">Kitchen Utility + Home Décor • automatic discovery</div></div>
+    <div id="health" class="badge">Checking…</div>
+  </div>
+
+  <div class="panel">
+    <div class="buttons">
+      <button id="both" class="btn primary">🚀 Run Both Categories</button>
+      <button id="kitchen" class="btn">Kitchen Utility</button>
+      <button id="decor" class="btn">Home Décor</button>
+      <button id="refresh" class="btn" style="grid-column:1/-1">↻ Refresh Products</button>
+    </div>
+    <div id="status" class="status">Ready.</div>
+  </div>
+
+  <div class="panel">
+    <div class="count">Accepted Products <span id="count">(0)</span></div>
+    <div class="muted">Score ≥ 60 • automatic filters</div>
+    <div id="products"><div class="empty">No accepted products yet. Start a hunt.</div></div>
+  </div>
+</div>
+
+<script>
+const API="https://wining-product-hunter.onrender.com";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+
+function setStatus(t,cls=""){ $("status").textContent=t; $("status").className="status "+cls; }
+
+function render(items){
+  $("count").textContent=`(${items.length})`;
+  if(!items.length){
+    $("products").innerHTML='<div class="empty">No accepted products yet.</div>';
+    return;
+  }
+  $("products").innerHTML=items.map(p=>{
+    const price=p.selling_price ?? p.sellingPrice ?? "—";
+    const cogs=p.cost_of_goods ?? p.costOfGoods ?? "—";
+    const markup=p.markup ?? "—";
+    const rating=p.rating ?? "—";
+    const reviews=p.reviews ?? "—";
+    const score=p.score ?? "—";
+    const verdict=p.verdict ?? "—";
+    return `<article class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px">
+        <div><b>${esc(p.name||"Unnamed product")}</b><div class="muted">${esc(p.category||p.category_key||"Product")}</div></div>
+        <div class="score">${esc(score)}</div>
+      </div>
+      <p><span class="pill">${esc(verdict)}</span></p>
+      <div class="row"><span class="muted">Selling</span><b>${esc(price)}</b></div>
+      <div class="row"><span class="muted">COGS</span><span>${esc(cogs)}</span></div>
+      <div class="row"><span class="muted">Markup</span><span>${esc(markup)}×</span></div>
+      <div class="row"><span class="muted">Rating</span><span>${esc(rating)}★ (${esc(reviews)})</span></div>
+    </article>`;
+  }).join("");
+}
+
+async function health(){
+  try{
+    const r=await fetch(API+"/health",{cache:"no-store"});
+    const d=await r.json();
+    $("health").textContent=`Backend v${d.version} • ${d.status||"ok"}`;
+  }catch(e){$("health").textContent="Backend offline";}
+}
+
+async function refreshProducts(){
+  try{
+    const r=await fetch(API+"/products/accepted?limit=50",{cache:"no-store"});
+    const d=await r.json();
+    render(d.products||[]);
+    return d.products||[];
+  }catch(e){setStatus("Could not load products: "+e.message,"err");return [];}
+}
+
+async function start(category){
+  const buttons=[$("both"),$("kitchen"),$("decor"),$("refresh")];
+  buttons.forEach(b=>b.disabled=true);
+  const label=category==="all"?"both categories":category==="kitchen_utility"?"Kitchen Utility":"Home Décor";
+  setStatus(`Starting ${label} hunt…`);
+  try{
+    const r=await fetch(API+"/auto-hunt/"+encodeURIComponent(category),{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:"{}"
+    });
+    const text=await r.text();
+    let d={}; try{d=JSON.parse(text)}catch{}
+    if(!r.ok || d.status!=="success"){
+      throw new Error(d.message||`Backend returned HTTP ${r.status}`);
+    }
+
+    setStatus(`✅ ${label} hunt started. Searching now…`,"ok");
+
+    // Backend runs the hunt in the background. Poll for accepted products.
+    let attempts=0;
+    const poll=async()=>{
+      attempts++;
+      const items=await refreshProducts();
+      if(items.length){
+        setStatus(`✅ Hunt finished/has results. ${items.length} accepted product(s) found.`,"ok");
+        buttons.forEach(b=>b.disabled=false);
+        return;
+      }
+      if(attempts>=24){
+        setStatus("⏳ Hunt is still processing. Tap Refresh Products later to see results.","");
+        buttons.forEach(b=>b.disabled=false);
+        return;
+      }
+      setStatus(`⏳ Hunt is running… checking again in 15 seconds (${attempts}/24)`);
+      setTimeout(poll,15000);
+    };
+    setTimeout(poll,5000);
+  }catch(e){
+    setStatus("❌ "+e.message,"err");
+    buttons.forEach(b=>b.disabled=false);
+  }
+}
+
+$("both").onclick=()=>start("all");
+$("kitchen").onclick=()=>start("kitchen_utility");
+$("decor").onclick=()=>start("home_decor");
+$("refresh").onclick=refreshProducts;
+
+health();
+refreshProducts();
+</script>
+</body>
+</html>
