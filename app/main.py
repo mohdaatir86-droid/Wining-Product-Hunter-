@@ -14,8 +14,8 @@ app=FastAPI(title="Product Hunter API", version=VERSION)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False, allow_methods=["*"], allow_headers=["*"])
 
 CATEGORIES={
- "kitchen_utility":["kitchen utility","kitchen organizer","kitchen storage","pantry organizer","drawer organizer","countertop organizer","sink organizer","kitchen cleaning","cooking tool","meal prep","spice organizer"],
- "home_decor":["home decor","home decoration","wall decor","table decor","living room decor","bedroom decor","decorative storage","aesthetic home","minimalist decor","home accessory"]
+ "kitchen_utility":["kitchen","kitchen utility","organizer","storage","pantry","drawer","countertop","sink","spice","cooking","meal prep","dish","utensil","cabinet","shelf","rack","holder","chopping","cutting","cleaning","baking"],
+ "home_decor":["home decor","home decoration","decor","decorative","wall","table decor","living room","bedroom","aesthetic","minimalist","home accessory","art","poster","frame","cushion","throw","shelf","vase","planter","ornament","sculpture","accent"]
 }
 WEIGHTS={"wow_factor":10,"price":8,"cogs":6,"markup":8,"perceived_value":8,"pain_point":8,"daily_use":7,"golden_customer":6,"lightweight":5,"safe_shipping":5,"evergreen":5,"quality":8,"proven_seller":8,"content_potential":8}
 
@@ -88,9 +88,13 @@ def desc_of(x): return str(first(x,["description","productDescription","product_
 
 def classify(text):
     t=norm(text)
-    scores={k:sum(1 for kw in kws if norm(kw) in t) for k,kws in CATEGORIES.items()}
-    best=max(scores,key=scores.get)
-    return best if scores[best]>0 else None
+    kitchen_terms=["kitchen","pantry","spice","utensil","dish","sink","drawer","cabinet","countertop","cooking","baking","meal prep","organizer","storage","rack","holder","shelf","chopping","cutting","cleaning"]
+    decor_terms=["decor","decorative","wall","table","living room","bedroom","aesthetic","minimalist","poster","frame","cushion","throw","vase","planter","ornament","sculpture","accent","art"]
+    ks=sum(2 if term in t else 0 for term in kitchen_terms)
+    ds=sum(2 if term in t else 0 for term in decor_terms)
+    if ks==0 and ds==0:
+        return None
+    return "kitchen_utility" if ks>=ds else "home_decor"
 
 def hard_reject(name,desc):
     t=norm(name+" "+desc)
@@ -283,6 +287,16 @@ async def execute_hunt(category, req):
 
         accepted = []
         rejected = 0
+        diagnostics = {
+            "seen": len(demand),
+            "rejected_hard_or_empty": 0,
+            "rejected_category": 0,
+            "rejected_price": 0,
+            "rejected_rating_reviews": 0,
+            "rejected_supplier_match": 0,
+            "rejected_cogs_markup": 0,
+            "rejected_score": 0,
+        }
 
         for i, x in enumerate(demand):
             n = name_of(x)
@@ -293,18 +307,24 @@ async def execute_hunt(category, req):
 
             if not n or sell <= 0 or hard_reject(n, desc):
                 rejected += 1
+                diagnostics["rejected_hard_or_empty"] += 1
                 continue
 
-            cat = classify(n + " " + desc + " " + category)
-            if cat != category:
+            cat = classify(n + " " + desc)
+            # The hunt query already defines the target category. Only reject when
+            # the product is confidently classified into the OTHER category.
+            if cat is not None and cat != category:
                 rejected += 1
+                diagnostics["rejected_category"] += 1
                 continue
 
             if sell < req.min_price or sell > req.max_price:
                 rejected += 1
+                diagnostics["rejected_price"] += 1
                 continue
             if rating < req.min_rating or reviews < req.min_reviews:
                 rejected += 1
+                diagnostics["rejected_rating_reviews"] += 1
                 continue
 
             best = None
@@ -315,13 +335,17 @@ async def execute_hunt(category, req):
                     bestsim = z
                     best = (sn, sc, sx)
 
-            if not best or bestsim < 0.38:
+            # Marketplace titles are rarely identical. Keep a meaningful
+            # supplier-match gate, but avoid dropping valid near-matches.
+            if not best or bestsim < 0.25:
                 rejected += 1
+                diagnostics["rejected_supplier_match"] += 1
                 continue
 
             supplier_name, cogs, sx = best
             if cogs <= 0 or cogs > req.max_cogs or sell / cogs < req.min_markup:
                 rejected += 1
+                diagnostics["rejected_cogs_markup"] += 1
                 continue
 
             score, breakdown = score_product(
@@ -329,6 +353,7 @@ async def execute_hunt(category, req):
             )
             if score < req.min_score:
                 rejected += 1
+                diagnostics["rejected_score"] += 1
                 continue
 
             p = {
@@ -376,6 +401,7 @@ async def execute_hunt(category, req):
             "accepted": len(accepted),
             "rejected": rejected,
             "source_errors": source_errors,
+            "diagnostics": diagnostics,
             "products": sorted(accepted, key=lambda p: p["score"], reverse=True),
         }
 
