@@ -4,9 +4,10 @@ from pydantic import BaseModel
 from typing import Optional, Any
 from difflib import SequenceMatcher
 import os, re, unicodedata, httpx, sqlite3, hashlib, json
+from urllib.parse import quote_plus
 from datetime import datetime, timezone
 
-VERSION = "5.2.0"
+VERSION = "5.3.0"
 DB_PATH = os.getenv("PRODUCT_HUNTER_DB", "product_hunter.db")
 
 app = FastAPI(title="Product Hunter API", version=VERSION)
@@ -215,6 +216,105 @@ def extract_list(body):
             return v
     return []
 
+async def crawlbase_get(target_url, scraper):
+    token = os.getenv("CRAWLBASE_TOKEN")
+    if not token:
+        return None, "not_configured"
+    params = {"token": token, "url": target_url, "scraper": scraper}
+    async with httpx.AsyncClient(timeout=120) as c:
+        r = await c.get("https://api.crawlbase.com/", params=params)
+        if r.status_code >= 400:
+            raise RuntimeError(f"Crawlbase HTTP {r.status_code}: {r.text[:500]}")
+        payload = r.json()
+        body = payload.get("body", payload) if isinstance(payload, dict) else payload
+        if isinstance(body, str):
+            try:
+                body = json.loads(body)
+            except Exception:
+                raise RuntimeError("Crawlbase returned non-JSON scraper body")
+        return body, None
+
+
+def crawlbase_products(body):
+    if isinstance(body, dict):
+        v = body.get("products")
+        if isinstance(v, list):
+            return v
+        # Some scraper responses can wrap the actual object in body/data.
+        for key in ("body", "data", "result"):
+            nested = body.get(key)
+            if isinstance(nested, dict) and isinstance(nested.get("products"), list):
+                return nested["products"]
+    return extract_list(body)
+
+
+def crawlbase_amazon_normalize(items):
+    out = []
+    for x in items:
+        if not isinstance(x, dict):
+            continue
+        y = dict(x)
+        y["name"] = first(y, ["name", "title", "productName"], "")
+        y["price"] = first(y, ["price", "rawPrice", "currentPrice"], 0)
+        y["rating"] = first(y, ["rating", "stars", "starRating"], 0)
+        y["reviews"] = first(y, ["reviews_count", "reviewCount", "customerReviewCount", "ratingsTotal"], 0)
+        y["image"] = first(y, ["image", "imageUrl", "thumbnail"], None)
+        y["url"] = first(y, ["url", "productUrl", "link"], None)
+        y["asin"] = first(y, ["asin", "ASIN"], None)
+        out.append(y)
+    return out
+
+
+def crawlbase_aliexpress_normalize(items):
+    out = []
+    for x in items:
+        if not isinstance(x, dict):
+            continue
+        y = dict(x)
+        y["name"] = first(y, ["title", "name", "productName"], "")
+        y["price"] = first(y, ["price", "current_price", "currentPrice"], 0)
+        y["rating"] = first(y, ["rating", "stars"], 0)
+        y["reviews"] = first(y, ["reviews_count", "reviewCount", "reviews"], 0)
+        y["orders"] = first(y, ["orders_count", "soldCount", "orders"], 0)
+        y["image"] = first(y, ["image_url", "image", "thumbnail"], None)
+        y["url"] = first(y, ["url", "productUrl", "link"], None)
+        y["product_id"] = first(y, ["product_id", "productId", "id"], None)
+        out.append(y)
+    return out
+
+
+async def run_crawlbase_amazon(queries, pages=1):
+    if not os.getenv("CRAWLBASE_TOKEN"):
+        return [], "not_configured"
+    out = []
+    pages = max(1, min(int(pages or 1), 3))
+    for q in queries:
+        for page in range(1, pages + 1):
+            url = f"https://www.amazon.com/s?k={quote_plus(q)}&page={page}"
+            body, err = await crawlbase_get(url, "amazon-serp")
+            if err:
+                return out, err
+            out.extend(crawlbase_amazon_normalize(crawlbase_products(body)))
+    return out, None
+
+
+async def run_crawlbase_aliexpress(queries, pages=1):
+    if not os.getenv("CRAWLBASE_TOKEN"):
+        return [], "not_configured"
+    out = []
+    pages = max(1, min(int(pages or 1), 3))
+    for q in queries:
+        for page in range(1, pages + 1):
+            # Crawlbase's current AliExpress SERP scraper accepts wholesale search URLs.
+            slug = re.sub(r"[^a-z0-9]+", "-", norm(q)).strip("-")
+            url = f"https://www.aliexpress.com/w/wholesale-{slug}.html?page={page}"
+            body, err = await crawlbase_get(url, "aliexpress-serp")
+            if err:
+                return out, err
+            out.extend(crawlbase_aliexpress_normalize(crawlbase_products(body)))
+    return out, None
+
+
 async def run_rapidapi_amazon(queries):
     key=os.getenv("RAPIDAPI_KEY")
     host=os.getenv("RAPIDAPI_AMAZON_HOST")
@@ -282,14 +382,20 @@ async def execute_hunt(category, req):
 
     try:
         demand=[]; supplier=[]
-        # RapidAPI is primary when configured.
+        # Crawlbase is the primary live source. RapidAPI/Apify are optional fallbacks.
         try:
-            demand,err=await run_rapidapi_amazon(queries)
-            diag["sources"]["rapidapi_amazon"]={"items":len(demand),"error":err}
+            demand,err=await run_crawlbase_amazon(queries, req.amazon_pages)
+            diag["sources"]["crawlbase_amazon"]={"items":len(demand),"error":err}
         except Exception as e:
-            diag["sources"]["rapidapi_amazon"]={"items":0,"error":str(e)}
+            diag["sources"]["crawlbase_amazon"]={"items":0,"error":str(e)}
 
-        # Optional Apify fallback/extra demand source.
+        if not demand:
+            try:
+                demand,err=await run_rapidapi_amazon(queries)
+                diag["sources"]["rapidapi_amazon"]={"items":len(demand),"error":err}
+            except Exception as e:
+                diag["sources"]["rapidapi_amazon"]={"items":0,"error":str(e)}
+
         token=os.getenv("APIFY_API_TOKEN")
         demand_actor=os.getenv("APIFY_DEMAND_ACTOR_ID")
         if not demand and token and demand_actor:
@@ -303,10 +409,17 @@ async def execute_hunt(category, req):
                 diag["sources"]["apify_amazon"]={"items":0,"error":str(e)}
 
         try:
-            supplier,err=await run_rapidapi_aliexpress(queries)
-            diag["sources"]["rapidapi_aliexpress"]={"items":len(supplier),"error":err}
+            supplier,err=await run_crawlbase_aliexpress(queries, req.supplier_pages)
+            diag["sources"]["crawlbase_aliexpress"]={"items":len(supplier),"error":err}
         except Exception as e:
-            diag["sources"]["rapidapi_aliexpress"]={"items":0,"error":str(e)}
+            diag["sources"]["crawlbase_aliexpress"]={"items":0,"error":str(e)}
+
+        if not supplier:
+            try:
+                supplier,err=await run_rapidapi_aliexpress(queries)
+                diag["sources"]["rapidapi_aliexpress"]={"items":len(supplier),"error":err}
+            except Exception as e:
+                diag["sources"]["rapidapi_aliexpress"]={"items":0,"error":str(e)}
 
         supplier_actor=os.getenv("APIFY_SUPPLIER_ACTOR_ID")
         if not supplier and token and supplier_actor:
@@ -421,6 +534,7 @@ def health():
         "rapidapi_configured":bool(os.getenv("RAPIDAPI_KEY")),
         "rapidapi_amazon_configured":bool(os.getenv("RAPIDAPI_KEY") and os.getenv("RAPIDAPI_AMAZON_HOST")),
         "rapidapi_aliexpress_configured":bool(os.getenv("RAPIDAPI_KEY")),
+        "crawlbase_configured":bool(os.getenv("CRAWLBASE_TOKEN")),
         "categories_available":list(CATEGORIES)
     }
 
@@ -436,7 +550,9 @@ def sources():
             f"https://{os.getenv('RAPIDAPI_AMAZON_HOST')}/amazon-serp.php"
             if os.getenv("RAPIDAPI_AMAZON_HOST") else None),
         "rapidapi_aliexpress_host":os.getenv("RAPIDAPI_ALIEXPRESS_HOST","aliexpress-api2.p.rapidapi.com"),
-        "rapidapi_aliexpress_url":os.getenv("RAPIDAPI_ALIEXPRESS_URL","https://aliexpress-api2.p.rapidapi.com/search")
+        "rapidapi_aliexpress_url":os.getenv("RAPIDAPI_ALIEXPRESS_URL","https://aliexpress-api2.p.rapidapi.com/search"),
+        "crawlbase_configured":bool(os.getenv("CRAWLBASE_TOKEN")),
+        "crawlbase_endpoint":"https://api.crawlbase.com/"
     }
 
 @app.get("/products/accepted")
