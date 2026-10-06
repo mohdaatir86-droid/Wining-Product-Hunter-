@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Product Hunter AI — Control Room</title>
+<meta name="theme-color" content="#0f1412">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2312b886'/%3E%3Ccircle cx='14' cy='14' r='7' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --surface-2:#eef0ec; --border:#dde1db; --text:#18201c; --muted:#5d6a63; --faint:#8a958f;
+  --accent:#0e9f6e; --accent-ink:#ffffff; --accent-soft:#dcf3ea;
+  --exc:#7c3aed; --strong:#0e9f6e; --test:#2563eb; --watch:#c2840a; --reject:#c2410c; --err:#c0392b;
+  --r:12px; --r-sm:8px; --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.04);
+  --font:"General Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+[data-theme=dark]{
+  --bg:#0f1412; --surface:#161d1a; --surface-2:#1d2622; --border:#2a3530; --text:#e7ece9; --muted:#9aa8a1; --faint:#6c7a73;
+  --accent:#2fd39b; --accent-ink:#06261a; --accent-soft:#143429;
+  --exc:#a78bfa; --strong:#2fd39b; --test:#60a5fa; --watch:#f5b942; --reject:#fb923c; --err:#f87171;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font);padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+@media(min-width:900px){body{padding-bottom:24px}}
+.num{font-variant-numeric:tabular-nums lining-nums}
+a{color:var(--accent)}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 10px;min-height:40px;width:100%}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* header */
+header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:calc(10px + env(safe-area-inset-top)) 16px 10px}
+.hwrap{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.01em}
+.brand small{display:block;font-weight:500;color:var(--muted);font-size:12px;letter-spacing:0}
+.status{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+.dot.ok{background:var(--strong)} .dot.bad{background:var(--err)} .dot.run{background:var(--watch);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.iconbtn{border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);width:36px;height:36px;display:grid;place-items:center}
+
+/* nav */
+nav.tabs{max-width:1280px;margin:12px auto 0;padding:0 16px;display:none;gap:4px}
+@media(min-width:900px){nav.tabs{display:flex}}
+nav.tabs button,.bottom button{border:0;background:none;padding:8px 14px;border-radius:999px;color:var(--muted);font-weight:500}
+nav.tabs button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+.bottom button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;padding:6px 2px;border-radius:10px}
+.bottom button.on{color:var(--accent)}
+.bottom svg{width:22px;height:22px}
+@media(min-width:900px){.bottom{display:none}}
+
+main{max-width:1280px;margin:0 auto;padding:16px}
+section.view{display:none} section.view.on{display:block}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+.grid{display:grid;gap:12px}
+h2{font-size:18px;margin:0 0 4px;letter-spacing:-.01em} h3{font-size:15px;margin:0 0 10px}
+.sub{color:var(--muted);font-size:13px;margin:0}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sp{flex:1}
+
+/* hunt control */
+.control{display:grid;gap:14px}
+@media(min-width:900px){.control{grid-template-columns:1.2fr 1fr}}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{border:1px solid var(--border);background:var(--surface-2);border-radius:var(--r-sm);padding:11px 12px;font-weight:600;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);grid-column:1/-1}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{min-height:34px;padding:6px 10px;font-size:13px;font-weight:500}
+.steps{display:flex;gap:4px;margin-top:6px}
+.step{flex:1;height:6px;border-radius:3px;background:var(--surface-2)}
+.step.done{background:var(--accent)} .step.cur{background:var(--watch);animation:pulse 1s infinite} .step.fail{background:var(--err)}
+.steplabels{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);margin-top:4px}
+.live{font-family:var(--mono);font-size:12px;background:var(--surface-2);border-radius:var(--r-sm);padding:10px;max-height:150px;overflow:auto;overscroll-behavior:contain;white-space:pre-wrap;color:var(--muted)}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+@media(max-width:600px){.kpi{padding:10px}.kpi .v{font-size:20px}.kpi .l{font-size:11px}}
+@media(max-width:520px){.brand small{display:none}.status #htext{max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+@media(max-width:699px){.prod{flex-direction:row}.pimg{aspect-ratio:auto;width:112px;flex:none;align-self:stretch;min-height:150px}.score{top:6px;left:6px;padding:4px 7px;flex-direction:column;gap:2px;align-items:flex-start}.score b{font-size:17px}.vbadge{font-size:9px;padding:2px 6px}.pbody{padding:12px;gap:8px}.metrics{grid-template-columns:repeat(3,1fr)}.m{padding:5px 6px}.m .v{font-size:13px}}
+@media(min-width:1100px){.kpis{grid-template-columns:repeat(6,1fr)}}
+.kpi{padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted)} .kpi .v{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.kpi .v small{font-size:12px;font-weight:500;color:var(--muted)}
+
+/* filters */
+.filters{display:grid;gap:10px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(min-width:900px){.fgrid{grid-template-columns:repeat(6,1fr)}}
+.fgrid label{font-size:12px;color:var(--muted);display:grid;gap:4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500;min-height:34px}
+.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+details.more summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+
+/* products */
+.pgrid{display:grid;gap:12px;grid-template-columns:1fr;margin-top:12px}
+@media(min-width:700px){.pgrid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1100px){.pgrid{grid-template-columns:repeat(3,1fr)}}
+.prod{padding:0;overflow:hidden;display:flex;flex-direction:column}
+.pimg{aspect-ratio:16/10;background:var(--surface-2);position:relative;display:grid;place-items:center;overflow:hidden}
+.pimg img{width:100%;height:100%;object-fit:contain;background:#fff}
+.score{position:absolute;top:10px;left:10px;background:var(--surface);border-radius:10px;padding:6px 10px;font-weight:700;box-shadow:var(--shadow);display:flex;align-items:baseline;gap:6px}
+.score b{font-size:20px}
+.vbadge{font-size:11px;font-weight:700;letter-spacing:.04em;padding:3px 8px;border-radius:999px;color:#fff}
+.v-EXCEPTIONAL{background:var(--exc)} .v-STRONG{background:var(--strong);color:var(--accent-ink)} .v-TEST{background:var(--test)} .v-WATCH{background:var(--watch);color:#231a00} .v-REJECT{background:var(--reject)}
+.pbody{padding:14px;display:grid;gap:10px;flex:1}
+.pname{font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.m{background:var(--surface-2);border-radius:var(--r-sm);padding:7px 8px}
+.m .l{font-size:11px;color:var(--muted)} .m .v{font-weight:600}
+.meta{font-size:12px;color:var(--muted)}
+.links{display:flex;gap:8px;flex-wrap:wrap}
+.links a{font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--border);padding:6px 10px;border-radius:var(--r-sm);color:var(--text)}
+.bars{display:grid;gap:5px;font-size:12px}
+.bar{display:grid;grid-template-columns:1fr 70px 38px;gap:8px;align-items:center}
+.bar .t{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.bar .t i{display:block;height:100%;background:var(--accent)}
+.empty{text-align:center;padding:40px 16px;color:var(--muted)}
+.empty b{display:block;color:var(--text);font-size:16px;margin-bottom:6px}
+
+/* pipeline */
+.funnel{display:grid;gap:6px}
+.fn{display:grid;grid-template-columns:150px 1fr 54px;gap:10px;align-items:center;font-size:13px}
+@media(max-width:500px){.fn{grid-template-columns:118px 1fr 46px}}
+.fn .t{height:22px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+.fn .t i{display:block;height:100%;border-radius:6px}
+.fn.click{cursor:pointer} .fn.click:hover .t{outline:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill.ok{background:var(--accent-soft);color:var(--accent)} .pill.bad{background:color-mix(in srgb,var(--err) 15%,transparent);color:var(--err)}
+.pill.run{background:color-mix(in srgb,var(--watch) 18%,transparent);color:var(--watch)}
+.two{display:grid;gap:12px} @media(min-width:900px){.two{grid-template-columns:1fr 1fr}}
+.items{display:grid;gap:8px;max-height:520px;overflow:auto;overscroll-behavior:contain}
+.it{border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;display:grid;gap:4px}
+.it .r{color:var(--muted)}
+code,.mono{font-family:var(--mono);font-size:12px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--text);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{opacity:1}
+.warn{border-left:3px solid var(--watch);padding:8px 12px;background:color-mix(in srgb,var(--watch) 10%,transparent);border-radius:6px;font-size:13px}
+.errbox{border-left:3px solid var(--err);padding:8px 12px;background:color-mix(in srgb,var(--err) 10%,transparent);border-radius:6px;font-size:13px;word-break:break-word}
+.skel{background:linear-gradient(90deg,var(--surface-2),var(--border),var(--surface-2));background-size:200% 100%;animation:sk 1.2s infinite;border-radius:8px}
+@keyframes sk{to{background-position:-200% 0}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <div class="brand">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-label="Product Hunter logo">
+        <rect width="32" height="32" rx="9" fill="var(--accent)"/>
+        <circle cx="14" cy="14" r="6.5" stroke="var(--accent-ink)" stroke-width="3"/>
+        <path d="M19 19l6 6" stroke="var(--accent-ink)" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="14" cy="14" r="2" fill="var(--accent-ink)"/>
+      </svg>
+      <div>Product Hunter AI<small>Kitchen Utility · Home Décor</small></div>
+    </div>
+    <div class="status"><span class="dot" id="hdot"></span><span id="htext" class="num">Connecting…</span></div>
+    <button class="iconbtn" id="themeBtn" aria-label="Toggle theme">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+  <nav class="tabs" id="topTabs">
+    <button data-v="products" class="on">Products</button>
+    <button data-v="pipeline">Pipeline</button>
+    <button data-v="history">Hunt history</button>
+    <button data-v="settings">Rules & settings</button>
+  </nav>
+</header>
+
+<main>
+  <!-- PRODUCTS -->
+  <section class="view on" id="v-products">
+  <!-- hunt control -->
+  <div class="control">
+    <div class="card">
+      <div class="row"><h2>Run a hunt</h2><span class="sp"></span><span class="pill" id="runPill">Idle</span></div>
+      <p class="sub" style="margin-bottom:12px">Discovers products automatically. No keywords needed.</p>
+      <div class="btns">
+        <button class="btn" data-hunt="kitchen_utility">Kitchen Utility</button>
+        <button class="btn" data-hunt="home_decor">Home Décor</button>
+        <button class="btn primary" data-hunt="all">Run both categories</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row"><h3 style="margin:0">Live progress</h3><span class="sp"></span><span class="meta num" id="runMeta">—</span></div>
+      <div class="steps" id="steps"></div>
+      <div class="steplabels"><span>Amazon</span><span>Suppliers</span><span>Filters</span><span>Match</span><span>Score</span><span>Done</span></div>
+      <p class="meta" id="liveLast" style="margin:10px 0 0">No hunt yet.</p>
+      <details style="margin-top:6px"><summary class="meta" style="cursor:pointer;color:var(--accent);font-weight:600">Full live log</summary><div class="live" id="liveLog" style="margin-top:8px">No hunt yet.</div></details>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+    <div class="card filters">
+      <div class="row"><h2>Accepted products</h2><span class="sp"></span>
+        <button class="btn sm" id="refreshBtn">Refresh</button>
+        <button class="btn sm" id="csvBtn">Export CSV</button>
+      </div>
+      <input id="q" type="search" placeholder="Search product or supplier name">
+      <div class="chips" id="catChips">
+        <button class="chip on" data-cat="">All</button>
+        <button class="chip" data-cat="kitchen_utility">Kitchen Utility</button>
+        <button class="chip" data-cat="home_decor">Home Décor</button>
+      </div>
+      <div class="chips" id="verdictChips">
+        <button class="chip on" data-vd="EXCEPTIONAL">Exceptional</button>
+        <button class="chip on" data-vd="STRONG WINNER">Strong winner</button>
+        <button class="chip on" data-vd="TEST">Test</button>
+        <button class="chip on" data-vd="WATCH">Watch</button>
+      </div>
+      <details class="more" id="moreF">
+        <summary>More filters ▾</summary>
+        <div class="fgrid" style="margin-top:10px">
+          <label>Min score<input id="fScore" type="number" inputmode="numeric" value="60" min="0" max="100"></label>
+          <label>Min price $<input id="fPmin" type="number" inputmode="decimal" placeholder="40"></label>
+          <label>Max price $<input id="fPmax" type="number" inputmode="decimal" placeholder="150"></label>
+          <label>Max COGS $<input id="fCogs" type="number" inputmode="decimal" placeholder="35"></label>
+          <label>Min markup ×<input id="fMk" type="number" inputmode="decimal" step="0.1" placeholder="3"></label>
+          <label>Min rating<input id="fRt" type="number" inputmode="decimal" step="0.1" placeholder="4.0"></label>
+          <label>Min reviews<input id="fRv" type="number" inputmode="numeric" placeholder="50"></label>
+          <label>Sweet spot only<select id="fSweet"><option value="">Any price</option><option value="1">$50–$80 only</option></select></label>
+          <label>Discovered<select id="fAge"><option value="">Any time</option><option value="1">Last 24 h</option><option value="7">Last 7 days</option><option value="run">Latest hunt only</option></select></label>
+          <label>Sort by<select id="fSort">
+            <option value="score">Score (high → low)</option><option value="markup">Markup</option>
+            <option value="reviews">Reviews</option><option value="price_asc">Price (low → high)</option>
+            <option value="price_desc">Price (high → low)</option><option value="new">Newest</option><option value="match">Supplier match</option>
+          </select></label>
+        </div>
+        <div class="row" style="margin-top:10px"><button class="btn sm" id="resetF">Reset filters</button></div>
+      </details>
+      <p class="sub num" id="countLine"></p>
+    </div>
+    <div class="pgrid" id="pgrid"></div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section class="view" id="v-pipeline">
+    <div class="card" style="margin-bottom:12px">
+      <div class="row"><h2>Backend pipeline</h2><span class="sp"></span>
+        <select id="runSel" style="width:auto;min-width:200px"></select>
+      </div>
+      <p class="sub">Every product the backend saw, and why it passed or failed. Tap a stage to see its products.</p>
+      <div id="runSummary" style="margin-top:12px"></div>
+    </div>
+    <div class="two">
+      <div class="card"><h3>Filter funnel</h3><div class="funnel" id="funnel"></div></div>
+      <div class="card"><h3>Data sources</h3><div class="tscroll"><table id="srcTable"></table></div><div id="srcErr" style="margin-top:10px;display:grid;gap:8px"></div></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="row"><h3 style="margin:0">Products in this stage</h3><span class="sp"></span><span class="pill" id="stageName">all</span></div>
+      <div class="chips" id="stageChips" style="margin:10px 0"></div>
+      <input id="itemQ" type="search" placeholder="Search in this run" style="margin-bottom:10px">
+      <div class="items" id="items"></div>
+    </div>
+    <div class="two" style="margin-top:12px">
+      <div class="card"><h3>Run log</h3><div class="live" id="runLog" style="max-height:320px"></div></div>
+      <div class="card"><h3>Source requests</h3><div class="tscroll" style="max-height:320px;overflow:auto"><table id="reqTable"></table></div></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>Raw field mapping</h3>
+      <p class="sub" style="margin-bottom:8px">Fields each source returned. Use this to spot parsing problems.</p>
+      <div id="rawSamples"></div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="view" id="v-history">
+    <div class="card">
+      <div class="row"><h2>Hunt history</h2><span class="sp"></span><button class="btn sm" id="histRefresh">Refresh</button></div>
+      <div class="tscroll" style="margin-top:10px"><table id="histTable"></table></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="v-settings">
+    <div class="two">
+      <div class="card"><h3>Hard filters</h3><dl class="kv num" id="cfgFilters"></dl></div>
+      <div class="card"><h3>14-point score weights</h3><div class="bars" id="cfgWeights"></div></div>
+      <div class="card"><h3>Verdicts</h3><dl class="kv" id="cfgVerdicts"></dl></div>
+      <div class="card"><h3>Auto-reject words</h3><div id="cfgReject" style="display:grid;gap:8px;font-size:13px"></div></div>
+      <div class="card"><h3>Discovery queries (rotated each hunt)</h3><div id="cfgQueries" style="display:grid;gap:10px;font-size:13px"></div></div>
+      <div class="card">
+        <h3>Connection</h3>
+        <label class="sub">Backend URL<input id="apiInput" type="url"></label>
+        <div class="row" style="margin-top:8px"><button class="btn sm" id="apiSave">Save</button><button class="btn sm" id="apiReset">Reset</button></div>
+        <dl class="kv" id="cfgEngine" style="margin-top:12px"></dl>
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav class="bottom" id="bottomTabs">
+  <button data-v="products" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Products</button>
+  <button data-v="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>Pipeline</button>
+  <button data-v="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
+  <button data-v="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Rules</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT_API="https://wining-product-hunter.onrender.com";
+let API=localStorage.getItem("ph_api")||DEFAULT_API;
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=v=>v==null||v===""?"—":"$"+Number(v).toFixed(2);
+const fmt=v=>v==null?"—":Number(v).toLocaleString("en-US");
+const ago=iso=>{if(!iso)return"—";const s=(Date.now()-new Date(iso))/1000;if(s<60)return Math.round(s)+"s ago";if(s<3600)return Math.round(s/60)+"m ago";if(s<86400)return Math.round(s/3600)+"h ago";return Math.round(s/86400)+"d ago"};
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("on"),2600)}
+
+const LABELS={wow_factor:"Wow factor",price:"Selling price",cogs:"COGS",markup:"Markup",perceived_value:"Perceived value",pain_point:"Pain / passion point",daily_use:"Daily use",golden_customer:"Golden customer",lightweight:"Small / lightweight",safe_shipping:"Safe shipping",evergreen:"Evergreen",quality:"Quality",proven_seller:"Proven seller",content_potential:"Content potential"};
+const DEFAULT_WEIGHTS={wow_factor:10,price:8,cogs:6,markup:8,perceived_value:8,pain_point:8,daily_use:7,golden_customer:6,lightweight:5,safe_shipping:5,evergreen:5,quality:8,proven_seller:8,content_potential:8};
+const STAGES=[
+ ["raw","Raw demand items","var(--faint)"],["missing_basic","Missing data","var(--reject)"],["duplicate","Duplicates","var(--faint)"],
+ ["hard_reject","Hard reject","var(--reject)"],["wrong_category","Wrong category","var(--reject)"],
+ ["price_out_of_range","Price out of range","var(--reject)"],["low_rating","Rating < min","var(--reject)"],["low_reviews","Reviews < min","var(--reject)"],
+ ["price_rating_reviews","Price/rating/reviews","var(--reject)"],
+ ["no_supplier_match","No supplier match","var(--watch)"],["bad_cogs_markup","COGS / markup","var(--watch)"],["low_score","Score < 60","var(--watch)"],["accepted","Accepted","var(--accent)"]];
+const STAGE_ORDER=["fetching_demand","fetching_suppliers","filtering","matching_suppliers","scoring","done"];
+
+const state={products:[],health:null,config:null,runs:[],latest:null,selRun:null,items:[],stage:"",cat:"",verdicts:new Set(["EXCEPTIONAL","STRONG WINNER","TEST","WATCH"]),polling:null};
+
+async function api(path,opt={}){
+  const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),opt.timeout||45000);
+  try{const r=await fetch(API+path,{cache:"no-store",...opt,signal:ctl.signal});
+      if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}
+  finally{clearTimeout(to)}
+}
+
+/* theme */
+const theme=localStorage.getItem("ph_theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+document.documentElement.dataset.theme=theme;
+$("#themeBtn").onclick=()=>{const t=document.documentElement.dataset.theme==="dark"?"light":"dark";document.documentElement.dataset.theme=t;localStorage.setItem("ph_theme",t)};
+
+/* tabs */
+function show(v){$$("section.view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));$$("[data-v]").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  if(v==="pipeline")loadRun(state.selRun);if(v==="history")loadHistory();window.scrollTo({top:0,behavior:"smooth"})}
+$$("[data-v]").forEach(b=>b.onclick=()=>show(b.dataset.v));
+
+/* health */
+async function loadHealth(){
+  try{const h=await api("/health",{timeout:70000});state.health=h;
+    $("#hdot").className="dot "+((h.running||[]).length?"run":"ok");
+    $("#htext").textContent=`v${h.version} · ${h.crawlbase_configured?"Crawlbase on":"Crawlbase off"}`;
+  }catch(e){$("#hdot").className="dot bad";$("#htext").textContent="Backend waking up…";}
+}
+async function loadConfig(){
+  try{state.config=await api("/config")}catch(e){state.config=null}
+  renderSettings();
+}
+
+/* products */
+async function loadProducts(){
+  if(!state.products.length)$("#pgrid").innerHTML=Array(3).fill('<div class="card prod"><div class="pimg skel"></div><div class="pbody"><div class="skel" style="height:16px"></div><div class="skel" style="height:40px"></div></div></div>').join("");
+  try{const d=await api("/products/accepted?limit=500");state.products=d.products||[];renderProducts();renderKpis()}
+  catch(e){$("#pgrid").innerHTML=`<div class="card empty" style="grid-column:1/-1"><b>Could not reach backend</b>Render free plan sleeps. Wait 60 seconds, then tap Refresh.<br><span class="mono">${esc(e.message)}</span></div>`}
+}
+function val(id){const v=$(id).value;return v===""?null:Number(v)}
+function filtered(){
+  const q=$("#q").value.trim().toLowerCase(),ms=val("#fScore")??0,pmin=val("#fPmin"),pmax=val("#fPmax"),cg=val("#fCogs"),mk=val("#fMk"),rt=val("#fRt"),rv=val("#fRv"),sweet=$("#fSweet").value,age=$("#fAge").value;
+  let latestRun=state.runs[0]?.id;
+  let out=state.products.filter(p=>{
+    if(state.cat&&p.category_key!==state.cat)return false;
+    if(!state.verdicts.has(p.verdict))return false;
+    if((p.score||0)<ms)return false;
+    const pr=p.selling_price;
+    if(pmin!=null&&pr<pmin)return false; if(pmax!=null&&pr>pmax)return false;
+    if(sweet&&(pr<50||pr>80))return false;
+    if(cg!=null&&p.cost_of_goods>cg)return false; if(mk!=null&&p.markup<mk)return false;
+    if(rt!=null&&p.rating<rt)return false; if(rv!=null&&p.reviews<rv)return false;
+    if(age==="run"&&latestRun&&p.run_id!==latestRun)return false;
+    if(age&&age!=="run"){const d=new Date(p.discovered_at||p.first_seen||0);if(Date.now()-d>Number(age)*86400000)return false}
+    if(q&&!((p.name||"")+" "+(p.supplier_name||"")).toLowerCase().includes(q))return false;
+    return true});
+  const s=$("#fSort").value,by={score:p=>-p.score,markup:p=>-p.markup,reviews:p=>-p.reviews,price_asc:p=>p.selling_price,price_desc:p=>-p.selling_price,new:p=>-new Date(p.discovered_at||0),match:p=>-(p.supplier_match_score||0)}[s];
+  return out.sort((a,b)=>by(a)-by(b));
+}
+function vclass(v){return "v-"+String(v||"REJECT").split(" ")[0]}
+function card(p,i){
+  const w=p.weights||state.config?.weights||DEFAULT_WEIGHTS,b=p.breakdown||{};
+  const bars=Object.keys(LABELS).filter(k=>k in b).map(k=>{const pts=(b[k]*(w[k]||0)/10);return `<div class="bar"><span>${LABELS[k]}</span><span class="t"><i style="width:${b[k]*10}%"></i></span><span class="num">${pts.toFixed(1)}/${w[k]}</span></div>`}).join("");
+  return `<article class="card prod">
+   <div class="pimg">${p.image?`<img loading="lazy" src="${esc(p.image)}" alt="" onerror="this.remove()">`:'<span class="meta">No image</span>'}
+     <div class="score num"><b>${Number(p.score).toFixed(0)}</b><span class="vbadge ${vclass(p.verdict)}">${esc(p.verdict)}</span></div></div>
+   <div class="pbody">
+     <div class="pname" title="${esc(p.name)}">${esc(p.name)}</div>
+     <div class="meta">${esc(p.category||"")} · ${esc(p.demand_source||"")} · found ${ago(p.first_seen||p.discovered_at)}</div>
+     <div class="metrics num">
+       <div class="m"><div class="l">Price</div><div class="v">${money(p.selling_price)}</div></div>
+       <div class="m"><div class="l">COGS</div><div class="v">${money(p.cost_of_goods)}</div></div>
+       <div class="m"><div class="l">Markup</div><div class="v">${Number(p.markup||0).toFixed(2)}×</div></div>
+       <div class="m"><div class="l">Rating</div><div class="v">★ ${p.rating??"—"}</div></div>
+       <div class="m"><div class="l">Reviews</div><div class="v">${fmt(p.reviews)}</div></div>
+       <div class="m"><div class="l">Margin</div><div class="v">${money(p.selling_price-p.cost_of_goods)}</div></div>
+     </div>
+     <div class="meta"><b>Supplier:</b> ${esc((p.supplier_name||"—").slice(0,90))}${p.supplier_match_score!=null?` · match ${(p.supplier_match_score*100).toFixed(0)}%`:""}${p.supplier_sold?` · ${fmt(p.supplier_sold)} sold`:""}</div>
+     <details><summary class="meta" style="cursor:pointer;color:var(--accent);font-weight:600">14-point breakdown</summary><div class="bars num" style="margin-top:8px">${bars||'<span class="meta">No breakdown saved</span>'}</div></details>
+     <div class="links">${p.url?`<a href="${esc(p.url)}" target="_blank" rel="noopener">Amazon ↗</a>`:""}${p.supplier_url?`<a href="${esc(p.supplier_url)}" target="_blank" rel="noopener">Supplier ↗</a>`:""}</div>
+   </div></article>`;
+}
+function renderProducts(){
+  const list=filtered();
+  $("#countLine").textContent=`Showing ${list.length} of ${state.products.length} accepted products`;
+  $("#pgrid").innerHTML=list.length?list.map(card).join(""):`<div class="card empty" style="grid-column:1/-1"><b>${state.products.length?"No products match these filters":"No accepted products yet"}</b>${state.products.length?"Loosen a filter or tap Reset filters.":"Run a hunt above. Then open Pipeline to see what happened to every product."}</div>`;
+}
+function renderKpis(){
+  const ps=state.products,c=v=>ps.filter(p=>p.verdict===v).length,last=state.runs[0];
+  const k=[["Accepted",ps.length],["Exceptional",c("EXCEPTIONAL")],["Strong winners",c("STRONG WINNER")],["Test",c("TEST")],["Watch",c("WATCH")],
+   ["Last hunt",last?`${last.accepted}<small> / ${fmt(last.demand_items)} seen</small>`:"—"]];
+  $("#kpis").innerHTML=k.map(([l,v])=>`<div class="card kpi"><div class="l">${l}</div><div class="v num">${v}</div></div>`).join("");
+}
+$("#q").oninput=renderProducts;
+["#fScore","#fPmin","#fPmax","#fCogs","#fMk","#fRt","#fRv","#fSweet","#fAge","#fSort"].forEach(id=>$(id).oninput=renderProducts);
+$("#catChips").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;state.cat=b.dataset.cat;$$("#catChips .chip").forEach(x=>x.classList.toggle("on",x===b));renderProducts()};
+$("#verdictChips").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;const v=b.dataset.vd;state.verdicts.has(v)?state.verdicts.delete(v):state.verdicts.add(v);b.classList.toggle("on");renderProducts()};
+$("#resetF").onclick=()=>{["#fPmin","#fPmax","#fCogs","#fMk","#fRt","#fRv"].forEach(i=>$(i).value="");$("#fScore").value=60;$("#fSweet").value="";$("#fAge").value="";$("#fSort").value="score";$("#q").value="";renderProducts()};
+$("#refreshBtn").onclick=()=>{loadProducts();loadHistory();toast("Refreshed")};
+$("#csvBtn").onclick=()=>{const l=filtered();if(!l.length)return toast("Nothing to export");
+  const cols=["name","category","score","verdict","selling_price","cost_of_goods","markup","rating","reviews","supplier_name","supplier_match_score","url","supplier_url","first_seen"];
+  const csv=[cols.join(",")].concat(l.map(p=>cols.map(c=>`"${String(p[c]??"").replace(/"/g,'""')}"`).join(","))).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="product-hunter-"+new Date().toISOString().slice(0,10)+".csv";a.click()};
+
+/* hunting */
+$$("[data-hunt]").forEach(b=>b.onclick=()=>startHunt(b.dataset.hunt));
+async function startHunt(cat){
+  $$("[data-hunt]").forEach(b=>b.disabled=true);
+  $("#runPill").className="pill run";$("#runPill").textContent="Starting…";
+  try{const r=await api("/auto-hunt/"+cat,{method:"POST",timeout:80000});
+    if(r.status==="busy"){toast("A hunt is already running")}
+    else if(r.status!=="success"){throw new Error(r.message||"Failed")}
+    else toast("Hunt started: "+(r.categories||[]).join(", "));
+    state.huntStarted=Date.now();startPolling();
+  }catch(e){toast("Could not start: "+e.message);$("#runPill").className="pill bad";$("#runPill").textContent="Error";$$("[data-hunt]").forEach(b=>b.disabled=false)}
+}
+function startPolling(){clearInterval(state.polling);pollLatest();state.polling=setInterval(pollLatest,4000)}
+async function pollLatest(){
+  let d;try{d=await api("/diagnostic/latest")}catch(e){return}
+  if(d.status==="no_hunts"){renderLive(null);return}
+  state.latest=d;renderLive(d);
+  const running=d.status==="running"||(state.health?.running||[]).length;
+  let h;try{h=await api("/health")}catch(e){}
+  if(h){state.health=h;$("#hdot").className="dot "+((h.running||[]).length?"run":"ok")}
+  const stillRunning=d.status==="running"||(h&&(h.running||[]).length);
+  if(!stillRunning&&state.polling&&Date.now()-(state.huntStarted||0)>8000){
+    clearInterval(state.polling);state.polling=null;$$("[data-hunt]").forEach(b=>b.disabled=false);
+    await loadHistory();await loadProducts();if($("#v-pipeline").classList.contains("on"))loadRun(null);
+    toast(`Hunt finished: ${d.accepted||0} accepted`);
+  }
+}
+function renderLive(d){
+  const st=$("#steps");
+  if(!d){st.innerHTML=STAGE_ORDER.map(()=>'<div class="step"></div>').join("");$("#runPill").className="pill";$("#runPill").textContent="Idle";return}
+  const dg=d.diagnostic||{},stage=dg.stage||(d.status==="success"?"done":d.status);
+  let idx=STAGE_ORDER.indexOf(stage);if(d.status==="success")idx=5;
+  st.innerHTML=STAGE_ORDER.map((s,i)=>`<div class="step ${d.status==="error"&&i===Math.max(idx,0)?"fail":i<idx||(i===idx&&idx===5)?"done":i===idx?"cur":""}"></div>`).join("");
+  const label=d.status==="running"?`Running · ${(d.category||"").replace("_"," ")}`:d.status==="success"?"Finished":d.status==="error"?"Error":d.status;
+  $("#runPill").className="pill "+(d.status==="running"?"run":d.status==="success"?"ok":"bad");$("#runPill").textContent=label;
+  $("#runMeta").textContent=`Run #${d.id} · ${dg.elapsed_seconds!=null?dg.elapsed_seconds+"s":""} · ${ago(d.started_at)}`;
+  const log=(dg.log||[]).slice(-12).map(l=>`[${String(l.t).padStart(5)}s] ${l.msg}`).join("\n");
+  const pipe=dg.pipeline?`\nSeen ${dg.raw_demand_items||d.demand_items||0} · suppliers ${dg.raw_supplier_items||d.supplier_items||0} · accepted ${dg.pipeline.accepted||0}`:"";
+  $("#liveLog").textContent=(log||"Waiting for backend…")+pipe;$("#liveLog").scrollTop=1e6;
+  const lastMsg=(dg.log||[]).slice(-1)[0];$("#liveLast").textContent=(lastMsg?lastMsg.msg:"Waiting for backend…")+(dg.pipeline?` · ${dg.raw_demand_items||0} seen · ${dg.pipeline.accepted||0} accepted`:"");
+  if(d.status==="running"&&!state.polling)startPolling();
+}
+
+/* pipeline */
+async function loadHistory(){
+  try{const d=await api("/hunt-history?limit=50");state.runs=d.runs||[]}catch(e){state.runs=[]}
+  renderHistory();renderKpis();
+  $("#runSel").innerHTML=state.runs.map(r=>`<option value="${r.id}">#${r.id} · ${CATN(r.category)} · ${r.accepted} accepted · ${ago(r.started_at)}</option>`).join("")||"<option>No hunts yet</option>";
+  if(state.selRun)$("#runSel").value=state.selRun;
+}
+const CATN=c=>c==="kitchen_utility"?"Kitchen":c==="home_decor"?"Home Décor":c;
+$("#runSel").onchange=e=>loadRun(Number(e.target.value));
+async function loadRun(id){
+  if(!state.runs.length)await loadHistory();
+  id=id||state.runs[0]?.id;if(!id){$("#runSummary").innerHTML='<div class="empty"><b>No hunts yet</b>Run a hunt to see the pipeline.</div>';return}
+  state.selRun=id;$("#runSel").value=id;
+  let d;try{d=await api("/diagnostic/run/"+id)}catch(e){try{d=await api("/diagnostic/latest")}catch(_){return}}
+  const dg=d.diagnostic||{};renderRun(d,dg);
+  try{const it=await api(`/diagnostic/run/${id}/items?limit=1500`);state.items=it.items||[]}catch(e){state.items=[]}
+  state.stage="";renderStageChips(dg);renderItems();
+}
+function renderRun(d,dg){
+  const p=dg.pipeline||{},raw=dg.raw_demand_items||d.demand_items||0;
+  $("#runSummary").innerHTML=`<dl class="kv num">
+    <dt>Status</dt><dd><span class="pill ${d.status==="success"?"ok":d.status==="running"?"run":"bad"}">${esc(d.status)}</span> ${esc(dg.stage||"")}</dd>
+    <dt>Category</dt><dd>${esc(CATN(d.category))}</dd>
+    <dt>Queries</dt><dd>${esc((dg.queries||[]).join(" · "))}</dd>
+    <dt>Started</dt><dd>${d.started_at?new Date(d.started_at).toLocaleString():"—"} (${dg.elapsed_seconds??"?"}s)</dd>
+    <dt>Demand items</dt><dd>${fmt(raw)}</dd>
+    <dt>Supplier items</dt><dd>${fmt(dg.raw_supplier_items||d.supplier_items)}${dg.usable_supplier_items!=null?` (${fmt(dg.usable_supplier_items)} usable USD)`:""}</dd>
+    <dt>Accepted</dt><dd><b>${fmt(d.accepted)}</b>${dg.new_products!=null?` (${dg.new_products} new)`:""}</dd></dl>
+    ${d.error&&!String(d.error).startsWith("{")?`<div class="errbox" style="margin-top:10px">${esc(d.error)}</div>`:""}`;
+  const max=Math.max(raw,1);
+  $("#funnel").innerHTML=STAGES.filter(([k])=>k==="raw"||(k in p&&!(k==="price_rating_reviews"&&("low_rating" in p)))).map(([k,l,c])=>{const n=k==="raw"?raw:p[k]||0;
+    return `<div class="fn ${k!=="raw"?"click":""}" data-stage="${k}"><span>${l}</span><span class="t"><i style="width:${Math.max(n?2:0,n/max*100)}%;background:${c}"></i></span><span class="num" style="text-align:right">${fmt(n)}</span></div>`}).join("");
+  $$("#funnel .fn.click").forEach(f=>f.onclick=()=>{state.stage=f.dataset.stage;renderStageChips(dg);renderItems();$("#items").scrollIntoView({behavior:"smooth",block:"center"})});
+  const src=dg.sources||{};
+  $("#srcTable").innerHTML="<tr><th>Source</th><th>Items</th><th>Calls</th><th>Status</th></tr>"+(Object.entries(src).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="num">${fmt(v.items)}</td><td class="num">${v.requests??"—"}</td><td>${v.error&&!v.items?'<span class="pill bad">failed</span>':v.error?'<span class="pill run">partial</span>':'<span class="pill ok">ok</span>'}</td></tr>`).join("")||'<tr><td colspan="4" class="meta">No source data</td></tr>');
+  $("#srcErr").innerHTML=Object.entries(src).filter(([,v])=>v.error).map(([k,v])=>`<div class="errbox"><b>${esc(k)}:</b> ${esc(v.error)}</div>`).join("")+(dg.supplier_non_usd?`<div class="warn">${dg.supplier_non_usd} supplier prices were not in USD and were ignored.</div>`:"");
+  $("#runLog").textContent=(dg.log||[]).map(l=>`[${String(l.t).padStart(5)}s] ${l.msg}`).join("\n")||"No log for this run (older backend version).";
+  const rq=dg.requests||[];
+  $("#reqTable").innerHTML="<tr><th>Source</th><th>Query</th><th>Items</th><th>Time</th><th>Status</th></tr>"+(rq.map(r=>`<tr><td>${esc(r.source.replace("crawlbase_",""))}</td><td>${esc(r.query)}${r.page?` p${r.page}`:""}</td><td class="num">${r.items}</td><td class="num">${r.seconds??"—"}s</td><td>${r.error?`<span class="pill bad" title="${esc(r.error)}">${esc(r.pc_status||r.http||"err")}</span>`:`<span class="pill ok">${esc(r.pc_status||r.http||"ok")}</span>`}</td></tr>`).join("")||'<tr><td colspan="5" class="meta">No request log</td></tr>');
+  const rs=dg.raw_samples||{};
+  $("#rawSamples").innerHTML=Object.keys(rs).length?Object.entries(rs).map(([k,v])=>`<details style="margin-bottom:8px"><summary style="cursor:pointer;font-weight:600">${esc(k)} · ${v.keys.length} fields</summary><div class="tscroll"><table>${Object.entries(v.example).map(([a,b])=>`<tr><td class="mono">${esc(a)}</td><td class="mono" style="word-break:break-all">${esc(b)}</td></tr>`).join("")}</table></div></details>`).join(""):'<p class="meta">No samples saved for this run.</p>';
+}
+function renderStageChips(dg){
+  const counts={};state.items.forEach(i=>counts[i.stage]=(counts[i.stage]||0)+1);
+  const keys=["",...STAGES.map(s=>s[0]).filter(k=>counts[k])];
+  $("#stageChips").innerHTML=keys.map(k=>`<button class="chip ${state.stage===k?"on":""}" data-s="${k}">${k?(STAGES.find(s=>s[0]===k)||[k,k])[1]:"All"} <span class="num">${k?counts[k]:state.items.length}</span></button>`).join("");
+  $("#stageName").textContent=state.stage||"all";
+  $$("#stageChips .chip").forEach(b=>b.onclick=()=>{state.stage=b.dataset.s;renderStageChips(dg);renderItems()});
+}
+$("#itemQ").oninput=renderItems;
+function renderItems(){
+  const q=$("#itemQ").value.trim().toLowerCase();
+  const l=state.items.filter(i=>(!state.stage||i.stage===state.stage)&&(!q||(i.name||"").toLowerCase().includes(q))).slice(0,400);
+  $("#items").innerHTML=l.length?l.map(i=>`<div class="it"><div class="row"><b style="flex:1;min-width:0">${esc(i.name)}</b><span class="pill ${i.stage==="accepted"?"ok":"bad"}">${esc(i.stage)}</span></div>
+    <div class="r num">${money(i.price)} · ★ ${i.rating??"—"} · ${fmt(i.reviews)} reviews${i.cogs!=null?` · COGS ${money(i.cogs)} · ${i.markup}×`:""}${i.score!=null?` · score ${i.score}`:""}${i.match!=null?` · match ${(i.match*100).toFixed(0)}%`:""}</div>
+    <div class="r">Reason: <b style="color:var(--text)">${esc(i.reason)}</b></div>
+    ${i.best_supplier?`<div class="r">Closest supplier: ${esc(i.best_supplier)}</div>`:""}
+    ${i.url?`<a href="${esc(i.url)}" target="_blank" rel="noopener" style="font-size:12px">Open listing ↗</a>`:""}</div>`).join(""):`<div class="empty"><b>No item details</b>${state.items.length?"Nothing in this stage.":"This run has no per-product trace (backend older than v5.4)."}</div>`;
+}
+
+/* history */
+function renderHistory(){
+  $("#histTable").innerHTML="<tr><th>#</th><th>Category</th><th>Status</th><th>Started</th><th>Time</th><th>Seen</th><th>Suppliers</th><th>Accepted</th><th></th></tr>"+(state.runs.map(r=>`<tr>
+   <td class="num">${r.id}</td><td>${esc(CATN(r.category))}</td>
+   <td><span class="pill ${r.status==="success"?"ok":r.status==="running"?"run":"bad"}">${esc(r.status)}</span></td>
+   <td>${ago(r.started_at)}</td><td class="num">${r.elapsed_seconds!=null?r.elapsed_seconds+"s":"—"}</td>
+   <td class="num">${fmt(r.demand_items)}</td><td class="num">${fmt(r.supplier_items)}</td><td class="num"><b>${fmt(r.accepted)}</b>${r.new_products?` <span class="meta">(+${r.new_products})</span>`:""}</td>
+   <td><button class="btn sm" data-run="${r.id}">Details</button></td></tr>`).join("")||'<tr><td colspan="9" class="meta">No hunts yet. Note: on Render free plan, history resets on each deploy.</td></tr>');
+  $$("[data-run]").forEach(b=>b.onclick=()=>{state.selRun=Number(b.dataset.run);show("pipeline")});
+}
+$("#histRefresh").onclick=loadHistory;
+
+/* settings */
+function renderSettings(){
+  const c=state.config||{filters:{min_price:40,max_price:150,preferred_min:50,preferred_max:80,max_cogs:35,min_markup:3,min_rating:4,min_reviews:50,min_score:60},weights:DEFAULT_WEIGHTS,verdicts:{"REJECT":"0-59","WATCH":"60-69","TEST":"70-79","STRONG WINNER":"80-89","EXCEPTIONAL":"90-100"}};
+  const f=c.filters;
+  $("#cfgFilters").innerHTML=`<dt>Selling price</dt><dd>$${f.min_price} – $${f.max_price}</dd><dt>Sweet spot</dt><dd>$${f.preferred_min} – $${f.preferred_max}</dd><dt>Max COGS</dt><dd>$${f.max_cogs}</dd><dt>Min markup</dt><dd>${f.min_markup}×</dd><dt>Min rating</dt><dd>${f.min_rating}</dd><dt>Min reviews</dt><dd>${f.min_reviews}</dd><dt>Auto-accept</dt><dd>score ≥ ${f.min_score}</dd>`;
+  $("#cfgWeights").innerHTML=Object.entries(c.weights).map(([k,w])=>`<div class="bar"><span>${LABELS[k]||k}</span><span class="t"><i style="width:${w*10}%"></i></span><span class="num">${w}</span></div>`).join("")+`<div class="meta num" style="text-align:right">Total ${Object.values(c.weights).reduce((a,b)=>a+b,0)}</div>`;
+  $("#cfgVerdicts").innerHTML=Object.entries(c.verdicts).map(([k,v])=>`<dt><span class="vbadge ${vclass(k)}">${k}</span></dt><dd class="num">${v}</dd>`).join("");
+  $("#cfgReject").innerHTML=c.hard_reject?Object.entries(c.hard_reject).map(([k,v])=>`<div><b>${esc(k.replace("_"," "))}:</b> <span class="meta">${esc(v.join(", ").replace(/\(\?![^)]*\)/g,"").replace(/ \?/g," ").replace(/[()]/g,"").replace(/\|/g,"/").replace(/\?/g,""))}</span></div>`).join(""):'<span class="meta">Available after backend v5.4 deploy.</span>';
+  $("#cfgQueries").innerHTML=c.queries?Object.entries(c.queries).map(([k,v])=>`<div><b>${esc(CATN(k))}</b><div class="meta">${esc(v.join(" · "))}</div></div>`).join(""):'<span class="meta">Available after backend v5.4 deploy.</span>';
+  const s=c.settings||{},h=state.health||{};
+  $("#cfgEngine").innerHTML=`<dt>Version</dt><dd>${esc(h.version||"—")}</dd><dt>Crawlbase</dt><dd>${h.crawlbase_configured?"configured":"not set"}</dd><dt>RapidAPI</dt><dd>${h.rapidapi_configured?"fallback":"off"}</dd><dt>Apify</dt><dd>${h.apify_configured?"fallback":"off"}</dd>`+(c.settings?`<dt>Queries / hunt</dt><dd>${s.queries_per_hunt}</dd><dt>Amazon pages</dt><dd>${s.amazon_pages}</dd><dt>Supplier lookups</dt><dd>${s.targeted_supplier_searches}</dd><dt>Match threshold</dt><dd>${s.match_min}</dd><dt>Scheduler</dt><dd>${s.scheduler_hours?`every ${s.scheduler_hours} h`:"off"}</dd>`:"");
+}
+$("#apiInput").value=API;
+$("#apiSave").onclick=()=>{API=$("#apiInput").value.replace(/\/+$/,"");localStorage.setItem("ph_api",API);toast("Saved");init()};
+$("#apiReset").onclick=()=>{localStorage.removeItem("ph_api");API=DEFAULT_API;$("#apiInput").value=API;init()};
+
+/* init */
+async function init(){
+  renderLive(null);
+  await loadHealth();
+  await Promise.all([loadConfig(),loadHistory(),loadProducts()]);
+  pollLatest();
+}
+init();
+setInterval(()=>{if(!state.polling&&document.visibilityState==="visible"){loadProducts();loadHistory();loadHealth()}},60000);
+</script>
+</body>
+</html>
