@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b10">
+<title>Product Hunter AI — Command Center v6.3</title>
+<style>
+:root{--bg:#080b10;--p:#10161f;--p2:#151d28;--l:#293443;--t:#f4f7fb;--m:#8e9aaa;--g:#a6e36d;--o:#ffc66d;--r:#ff7f8a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.app{max-width:1200px;margin:auto;min-height:100vh;padding-bottom:65px}
+header{position:sticky;top:0;z-index:10;background:#080b10ee;backdrop-filter:blur(15px);border-bottom:1px solid var(--l);padding:13px 17px;display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;gap:10px;align-items:center}.logo{width:40px;height:40px;border-radius:12px;background:var(--g);color:#111;display:grid;place-items:center;font-weight:950}.brand b{display:block;font-size:17px}.brand small{color:var(--m);font-size:9px;letter-spacing:1.4px}
+.status{padding:8px 11px;border:1px solid var(--l);border-radius:99px;font-size:12px}.online{color:var(--g)}.offline{color:var(--r)}
+main{padding:16px}.tabs{display:flex;gap:7px;overflow:auto;padding-bottom:14px}.tabs button{white-space:nowrap;background:#111721;color:#aeb8c9;border:1px solid var(--l);padding:9px 12px;border-radius:99px}.tabs button.active{background:#27391f;color:var(--g);border-color:#58733d}
+.screen{display:none}.screen.active{display:block}.hero{padding:20px 0}.eyebrow{color:var(--g);font-weight:850;font-size:11px;letter-spacing:1.5px}.hero h1{font-size:38px;line-height:1.05;margin:8px 0}.hero p,.muted{color:var(--m);line-height:1.5}
+.panel,.card,.stat,.pipeline,.raw,.rule{background:linear-gradient(180deg,#111821,#0e141c);border:1px solid var(--l);border-radius:16px;padding:15px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{margin-bottom:10px}.field label{display:block;color:var(--m);font-size:11px;margin-bottom:6px}input,select{width:100%;background:#0b1017;color:#fff;border:1px solid #303b49;border-radius:10px;padding:10px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:9px}.primary,.secondary{border-radius:11px;padding:11px 14px;font-weight:850}.primary{background:var(--g);color:#11170d;border:0}.secondary{background:#18212d;color:#dbe5f2;border:1px solid var(--l)}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:12px 0}.stat small{color:var(--m)}.stat b{display:block;font-size:24px;margin-top:5px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.card h3{margin:0 0 5px}.score{font-size:29px;font-weight:950;color:var(--g)}.row{display:flex;justify-content:space-between;border-top:1px solid #202936;padding:8px 0;font-size:12px}.pill{display:inline-block;padding:5px 8px;border-radius:99px;background:#202a36;font-size:10px;font-weight:850}.winner{background:#263b1e;color:var(--g)}.watch{color:var(--o)}.reject{color:var(--r)}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:20px 0 10px}.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.step{padding:11px;border:1px solid var(--l);border-radius:12px;background:#0b1017}.step b{display:block;font-size:11px}.step span{display:block;color:#778393;font-size:10px;margin-top:4px}.step.live{border-color:#789b52}.step.done b{color:var(--g)}
+.raw{overflow:auto}.raw pre{white-space:pre-wrap;word-break:break-word;color:#b9c7d8;font-size:11px;line-height:1.5;max-height:500px}.notice{padding:12px;border:1px solid #344152;background:#101822;border-radius:12px;color:#aebaca;font-size:11px;line-height:1.5}
+.tablewrap{overflow:auto;border:1px solid var(--l);border-radius:14px}table{width:100%;border-collapse:collapse;min-width:680px}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--l);font-size:11px}th{color:var(--m)}
+.rules{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.rule b{display:block;margin-bottom:7px}.rule span{color:var(--m);font-size:12px;line-height:1.5}.product-click{cursor:pointer}.product-click:active{transform:scale(.995)}.thumb{width:100%;aspect-ratio:1.2/1;object-fit:cover;border-radius:12px;background:#0b1017;display:block;margin-bottom:10px}.detailOverlay{position:fixed;inset:0;background:#000b;backdrop-filter:blur(8px);z-index:50;display:none;overflow:auto;padding:18px}.detailOverlay.open{display:block}.detail{max-width:760px;margin:0 auto;background:#0f161f;border:1px solid var(--l);border-radius:18px;padding:16px}.detailTop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.close{background:#1b2531;color:#fff;border:1px solid var(--l);border-radius:10px;padding:8px 10px}.detailImg{width:100%;max-height:430px;object-fit:contain;background:#0a0f15;border-radius:14px;margin:12px 0}.detailGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.metric{padding:12px;border:1px solid var(--l);border-radius:12px;background:#0b1118}.metric small{display:block;color:var(--m);margin-bottom:5px}.metric b{font-size:17px}.sourceLink{word-break:break-all}.tiny{font-size:10px;color:#6f7b8b}.sectionGap{margin-top:14px}@media(max-width:600px){.detailGrid{grid-template-columns:1fr}}.bottom{position:fixed;bottom:0;left:0;right:0;background:#080b10ee;border-top:1px solid var(--l);padding:9px;text-align:center;color:#697585;font-size:10px}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.steps{grid-template-columns:1fr 1fr}.rules{grid-template-columns:1fr}.hero h1{font-size:30px}}@media(max-width:500px){.grid{grid-template-columns:1fr}.hero{padding:12px 0}}
+
+/* Product Hunter v6.3 Premium UI */
+:root{
+ --bg:#f7f8fa;--p:#fff;--p2:#f1f3f6;--l:#e3e7ec;--t:#111827;--m:#667085;
+ --g:#16a34a;--g2:#dcfce7;--o:#d97706;--o2:#fff7ed;--r:#dc2626;--r2:#fef2f2;
+ --b:#2563eb;--b2:#eff6ff;--purple:#7c3aed;--shadow:0 8px 30px rgba(16,24,40,.07);
+}
+body{background:var(--bg)!important;color:var(--t)!important}
+.app{max-width:1440px;padding:0 20px 90px}
+header{background:rgba(255,255,255,.92)!important;border-color:var(--l)!important;box-shadow:0 1px 8px rgba(16,24,40,.04)}
+.logo{background:#111827!important;color:#fff!important}
+.brand b{letter-spacing:-.02em}
+.card,.panel,.box,.product,.metric,.section,.result,.stat{background:var(--p)!important;border:1px solid var(--l)!important;box-shadow:var(--shadow)!important;border-radius:18px!important}
+button,input,select{border-radius:12px!important}
+button{font-weight:700}
+.section-title{letter-spacing:-.02em}
+.badge,.pill{border-radius:999px!important}
+.premium-hero{background:linear-gradient(135deg,#fff 0%,#f8fafc 65%,#eefbf2 100%);border:1px solid var(--l);box-shadow:var(--shadow);border-radius:24px;padding:28px;margin:22px 0}
+.premium-hero h1{font-size:clamp(28px,5vw,48px);line-height:1.03;margin:5px 0 10px;letter-spacing:-.045em}
+.premium-hero p{max-width:760px;color:var(--m);font-size:16px;line-height:1.55}
+.context-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0 24px}
+.context-item{background:#fff;border:1px solid var(--l);border-radius:14px;padding:13px}
+.context-item small{display:block;color:var(--m);font-size:11px;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
+.context-item strong{font-size:15px}
+.intel-section{margin:30px 0}
+.intel-heading{display:flex;justify-content:space-between;gap:15px;align-items:end;margin-bottom:12px}
+.intel-heading h2{margin:0;font-size:22px;letter-spacing:-.025em}
+.intel-heading p{margin:4px 0 0;color:var(--m)}
+.product-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.product-card{background:#fff;border:1px solid var(--l);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:.18s transform,.18s box-shadow}
+.product-card:hover{transform:translateY(-2px);box-shadow:0 14px 38px rgba(16,24,40,.11)}
+.product-card img{width:100%;height:190px;object-fit:cover;background:#f1f3f6}
+.product-body{padding:16px}
+.product-name{font-size:16px;font-weight:800;margin:7px 0}
+.price{font-size:20px;font-weight:850}
+.score-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.score{background:#f8fafc;border-radius:12px;padding:10px}
+.score small{display:block;color:var(--m);font-size:10px;text-transform:uppercase}
+.score strong{font-size:17px}
+.trend-up{color:var(--g);font-weight:800}.trend-down{color:var(--r);font-weight:800}
+.ai-note{background:#f8fafc;border-left:3px solid var(--b);padding:11px 12px;border-radius:8px;color:#344054;line-height:1.45;font-size:12px}
+.filters-clean{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.filters-clean select,.filters-clean input{background:#fff;border:1px solid var(--l);padding:10px 12px;color:var(--t)}
+.detail-shell{display:grid;grid-template-columns:minmax(280px,1fr) 1.4fr;gap:18px}
+.detail-image{width:100%;max-height:480px;object-fit:contain;background:#fff;border:1px solid var(--l);border-radius:20px}
+.ai-verdict{background:linear-gradient(135deg,#ecfdf3,#fff);border:1px solid #bbf7d0;border-radius:18px;padding:20px}
+.ai-verdict h3{margin:0 0 8px;color:#166534}
+.big-score{font-size:44px;font-weight:900;letter-spacing:-.05em}
+.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.detail-metric{background:#fff;border:1px solid var(--l);border-radius:14px;padding:14px}
+.detail-metric small{color:var(--m);display:block;margin-bottom:6px}
+.detail-metric strong{font-size:20px}
+.progress{height:8px;background:#edf0f3;border-radius:999px;overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;background:#2563eb;border-radius:999px}
+.data-quality{font-size:10px;color:var(--m);margin-top:5px}
+@media(max-width:900px){.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.context-bar{grid-template-columns:repeat(3,1fr)}.detail-shell{grid-template-columns:1fr}}
+@media(max-width:620px){.app{padding:0 12px 80px}.product-grid{grid-template-columns:1fr}.context-bar{grid-template-columns:repeat(2,1fr)}.premium-hero{padding:20px}.premium-hero h1{font-size:32px}.detail-grid{grid-template-columns:repeat(2,1fr)}header{padding:10px 12px}}
+
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="brand"><div class="logo">PH</div><div><b>Product Hunter AI</b><small>COMMERCE COMMAND CENTER</small></div></div><div id="backendStatus" class="status">Checking…</div></header>
+<main>
+<nav class="tabs">
+<button class="active" data-tab="dashboard">Dashboard</button><button data-tab="hunt">AI Hunt</button><button data-tab="winners">Winners</button><button data-tab="signals">🔥 Demand Signals</button><button data-tab="pipeline">Pipeline</button><button data-tab="scraper">Scraper Data</button><button data-tab="history">History</button><button data-tab="rules">Rules</button>
+</nav>
+
+<section id="dashboard" class="screen active">
+<div class="hero"><div class="eyebrow">14-POINT WINNER ENGINE</div><h1>Find products worth testing.</h1><p>Discovery, supplier data, scoring, economics and transparency in one command center.</p><div class="actions"><button class="primary" onclick="showTab('hunt')">🚀 Start AI Hunt</button><button class="secondary" onclick="refreshAll()">↻ Refresh</button></div></div>
+<div class="kpis"><div class="stat"><small>Accepted</small><b id="kAccepted">—</b></div><div class="stat"><small>Winners</small><b id="kWinners">—</b></div><div class="stat"><small>Avg Score</small><b id="kAvg">—</b></div><div class="stat"><small>Hunts</small><b id="kHunts">—</b></div><div class="stat"><small>Backend</small><b id="kBackend">—</b></div></div>
+<div class="section-title"><h2>Top Opportunities</h2><button class="secondary" onclick="showTab('winners')">View Winners</button></div><div id="dashCards" class="cards"><div class="notice">Loading…</div></div>
+<div class="section-title"><h2>Live Processing</h2><button class="secondary" onclick="showTab('pipeline')">Pipeline</button></div><div id="dashPipeline" class="pipeline"></div>
+</section>
+
+<section id="hunt" class="screen">
+<div class="section-title"><div><h2>AI Product Hunt</h2><div class="muted">USA dropshipping intelligence — Kitchen Utility + Home Décor</div></div></div>
+<div class="panel"><div class="grid">
+<div class="field"><label>Category</label><select id="category"><option value="all">Both Categories</option><option value="kitchen_utility">Kitchen Utility</option><option value="home_decor">Home Décor</option></select></div>
+<div class="field"><label>Market</label><select id="market"><option value="US">🇺🇸 USA — USD</option></select></div>
+<div class="field"><label>Opportunity Type</label><select id="opportunityType"><option value="all">All Opportunities</option><option value="EARLY VIRAL">🔥 Early Viral</option><option value="RISING FAST">📈 Rising Fast</option><option value="HIGH DEMAND">💰 High Demand</option><option value="SATURATED">⚠️ High Demand / Saturated</option></select></div>
+<div class="field"><label>Minimum AI Score</label><select id="minAiScore"><option value="0">Any</option><option value="60">60+</option><option value="70">70+</option><option value="80">80+</option><option value="90">90+</option></select></div>
+<div class="field"><label>Sort By</label><select id="sortBy"><option value="opportunity">AI Opportunity</option><option value="viral">Early Viral</option><option value="demand">Demand Momentum</option><option value="rank">Rank Improvement</option><option value="sales">Sales Velocity</option><option value="latest">Latest</option></select></div>
+<div class="field"><label>Products</label><select id="maxProducts"><option>20</option><option>40</option><option>60</option></select></div>
+</div><div class="notice" style="margin-top:8px">💡 Selling price is never hard-filtered. AI uses price, COGS, demand, momentum, competition and your 14-point framework to rank opportunities.</div><div class="actions"><button id="runBtn" class="primary" onclick="runHunt()">🚀 RUN AI HUNT</button><button class="secondary" onclick="runAuto('all')">⚡ AUTO HUNT</button><span id="huntMsg" class="muted">Ready</span></div></div>
+<div class="section-title"><h3>Hunt Results</h3><button class="secondary" onclick="refreshAccepted()">↻ Refresh</button></div><div id="huntResults" class="cards"><div class="notice">Run a hunt to see products.</div></div>
+</section>
+
+<section id="winners" class="screen"><div class="section-title"><div><h2>🏆 Winners</h2><div class="muted">Highest opportunity products</div></div><button class="secondary" onclick="refreshWinners()">↻ Refresh</button></div><div id="winnerCards" class="cards"><div class="notice">Loading…</div></div></section>
+
+<section id="signals" class="screen"><div class="section-title"><div><h2>🔥 Demand Signals</h2><div class="muted">Find products gaining demand before they become obvious top sellers.</div></div><button class="secondary" onclick="refreshTrending()">↻ Refresh</button></div><div class="panel" style="margin-bottom:12px"><b>Momentum model</b><div class="muted" style="margin-top:6px">Momentum + ranking + trends + sales velocity + competition. Early Viral prioritizes acceleration, not just current sales. Missing providers never fabricate data.</div></div><div id="signalCards" class="cards"><div class="notice">Loading…</div></div></section>
+
+<section id="pipeline" class="screen">
+<div class="section-title"><div><h2>🔄 Processing Transparency</h2><div class="muted">See where processing is working or failing.</div></div><button class="secondary" onclick="refreshPipeline()">↻ Refresh</button></div>
+<div id="pipelineBox" class="pipeline"></div>
+<div class="kpis"><div class="stat"><small>Demand Seen</small><b id="pDemand">—</b></div><div class="stat"><small>Supplier Records</small><b id="pSupplier">—</b></div><div class="stat"><small>Accepted</small><b id="pAccepted">—</b></div><div class="stat"><small>Rejected</small><b id="pRejected">—</b></div><div class="stat"><small>Errors</small><b id="pErrors">—</b></div></div>
+<div id="pipelineRaw" class="raw"><pre>Waiting for pipeline…</pre></div>
+</section>
+
+<section id="scraper" class="screen">
+<div class="section-title"><div><h2>🔍 Scraper Data</h2><div class="muted">Actual data returned by scraper APIs.</div></div><button class="secondary" onclick="refreshScraper()">↻ Refresh</button></div>
+<div class="notice">Raw transparency view. It helps verify whether Crawlbase or fallback sources actually return product records.</div>
+<div id="scraperMeta" class="kpis"></div><div id="scraperBox" class="raw"><pre>Waiting for scraper data…</pre></div>
+</section>
+
+<section id="history" class="screen">
+<div class="section-title"><div><h2>📜 Hunt History</h2><div class="muted">Previous hunts and outcomes.</div></div><button class="secondary" onclick="refreshHistory()">↻ Refresh</button></div>
+<div id="historyTable" class="tablewrap"><table><thead><tr><th>Time</th><th>Category</th><th>Keyword</th><th>Products</th><th>Accepted</th><th>Status</th></tr></thead><tbody><tr><td colspan="6">Loading…</td></tr></tbody></table></div>
+</section>
+
+<section id="rules" class="screen">
+<div class="section-title"><div><h2>⚙️ Winner Rules</h2><div class="muted">Product Hunter selection engine.</div></div></div>
+<div class="rules">
+<div class="rule"><b>💰 Economics</b><span>Price is displayed, not hard-filtered. Use the 14-point score plus your own judgment; COGS and markup remain visible.</span></div>
+<div class="rule"><b>⭐ Proof of Demand</b><span>Minimum 4.0 rating and 50+ reviews. Successful existing sellers are a positive signal.</span></div>
+<div class="rule"><b>🎯 Golden Customer</b><span>Clear customer plus an obvious pain or passion point.</span></div>
+<div class="rule"><b>🔥 Wow Factor</b><span>Strong perceived value and differentiation.</span></div>
+<div class="rule"><b>📦 Logistics</b><span>Small, lightweight and easy to ship. Avoid electronics and fragile/glass products.</span></div>
+<div class="rule"><b>🌱 Evergreen</b><span>Avoid seasonal products. Prefer frequent or repeat-use products.</span></div>
+<div class="rule"><b>🎥 Content Potential</b><span>Products that can be demonstrated effectively in short-form content.</span></div>
+<div class="rule"><b>🏆 Score Bands</b><span>0–59 Reject · 60–69 Watch · 70–79 Test · 80–89 Strong Winner · 90–100 Exceptional.</span></div>
+</div>
+</section>
+</main>
+<div id="detailOverlay" class="detailOverlay" onclick="if(event.target.id==='detailOverlay')closeProduct()"><div id="detailBody" class="detail"><div class="notice">Select a product to view intelligence.</div></div></div><div class="bottom">Product Hunter AI v6.3 · Early Viral + Demand Intelligence · USA</div>
+</div>
+
+<script>
+const API="https://wining-product-hunter.onrender.com";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+
+async function api(path,opts={}){
+ const r=await fetch(API+path,{cache:"no-store",...opts,headers:{"Content-Type":"application/json",...(opts.headers||{})}});
+ const text=await r.text();let d;try{d=JSON.parse(text)}catch{d={raw:text}};
+ if(!r.ok)throw new Error("HTTP "+r.status+(d.detail?": "+d.detail:""));
+ return d;
+}
+
+function showTab(id){
+ document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+ document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("active",x.dataset.tab===id));
+ $(id).classList.add("active");
+ if(id==="winners")refreshWinners();
+ if(id==="signals")refreshTrending();
+ if(id==="pipeline")refreshPipeline();
+ if(id==="scraper")refreshScraper();
+ if(id==="history")refreshHistory();
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+function money(v,cur){return v==null||v===""?"—":`${cur||""} ${Number(v).toFixed(2)}`}
+function productCard(p){
+ const score=Number(p.opportunity_score??p.score??0), viral=p.early_viral_score, demand=p.demand_momentum_score;
+ const verdict=p.viral_classification||p.demand_momentum_verdict||p.verdict||"—";
+ const cls=String(verdict).includes("VIRAL")?"winner":String(verdict).includes("RISING")?"watch":score>=80?"winner":"watch";
+ const key=encodeURIComponent(p.product_key||"");
+ const cur=p.currency||"";
+ const img=p.image?`<img class="thumb" src="${esc(p.image)}" alt="" loading="lazy" onerror="this.style.display='none'">`:'';
+ const s24=p.sales_last_24h==null?'Collecting':p.sales_last_24h;
+ const s7=p.sales_last_7d==null?'Collecting':p.sales_last_7d;
+ const rv=p.rank_velocity||{}, rank=rv.current_rank==null?'—':`#${rv.current_rank}`;
+ const rv7=rv.velocity_7d==null?'Collecting':`${rv.velocity_7d>0?'+':''}${rv.velocity_7d}%`;
+ return `<article class="card product-click" onclick="openProduct('${key}')">${img}<div style="display:flex;justify-content:space-between;gap:10px"><div><h3>${esc(p.name||p.title||"Unnamed Product")}</h3><div class="muted">${esc(p.category||"Product")} · 🇺🇸 ${esc(p.country||p.marketplace||"US")}</div></div><div class="score">${esc(score)}</div></div><p><span class="pill ${cls}">${esc(verdict)}</span> <span class="pill">Tap for intelligence</span></p><div class="row"><span class="muted">Selling</span><b>${esc(money(p.selling_price??p.price,cur))}</b></div><div class="row"><span class="muted">Early Viral</span><b>${esc(viral==null?'Collecting':viral+'/100')}</b></div><div class="row"><span class="muted">Demand</span><span>${esc(demand==null?'Collecting':demand+'/100')}</span></div><div class="row"><span class="muted">Rank / 7d movement</span><span>${esc(rank)} / ${esc(rv7)}</span></div><div class="row"><span class="muted">Sales · 24h / 7d</span><span>${esc(s24)} / ${esc(s7)}</span></div><div class="row"><span class="muted">Competition</span><span>${esc(p.competition_score==null?'Collecting':p.competition_score+'/100')}</span></div></article>`;
+}
+
+function openProduct(key){
+ if(!key){return}
+ const ov=$('detailOverlay'); ov.classList.add('open'); $('detailBody').innerHTML='<div class="notice">Loading product intelligence…</div>';
+ api('/products/detail/'+key).then(renderDetail).catch(e=>{$('detailBody').innerHTML='<div class="notice">Could not load details: '+esc(e.message)+'</div>'});
+}
+function closeProduct(){ $('detailOverlay').classList.remove('open'); }
+function renderDetail(d){
+ const p=d.product||{}, s=d.sales||{}, dm=s.demand||{}, sm=s.supplier_orders||{};
+ const cur=p.currency||'';
+ const val=(x)=>x==null?'Not available':x;
+ const measured=(x)=>x==null?'Collecting data':x;
+ $('detailBody').innerHTML=`<div class="detailTop"><div><div class="eyebrow">PRODUCT INTELLIGENCE</div><h2 style="margin:5px 0">${esc(p.name||'Unnamed Product')}</h2><div class="muted">${esc(p.category||'Product')} · ${esc(p.marketplace||p.country||'Market')}</div></div><button class="close" onclick="closeProduct()">✕</button></div>
+ ${p.image?`<img class="detailImg" src="${esc(p.image)}" alt="" onerror="this.style.display='none'">`:''}
+ <div class="detailGrid"><div class="metric"><small>Winner Score</small><b>${esc(p.score??'—')} · ${esc(p.verdict??'—')}</b></div><div class="metric"><small>Selling Price</small><b>${esc(money(p.selling_price,cur))}</b></div><div class="metric"><small>COGS</small><b>${esc(money(p.cost_of_goods,cur))}</b></div><div class="metric"><small>Markup</small><b>${esc(p.markup??'—')}×</b></div><div class="metric"><small>Rating</small><b>${esc(p.rating??'—')} ★</b></div><div class="metric"><small>Reviews</small><b>${esc(p.reviews??'—')}</b></div><div class="metric"><small>Demand sales · last 24h</small><b>${esc(measured(dm.last_24h))}</b></div><div class="metric"><small>Demand sales · last 7d</small><b>${esc(measured(dm.last_7d))}</b></div><div class="metric"><small>Supplier orders · last 24h</small><b>${esc(measured(sm.last_24h))}</b></div><div class="metric"><small>Supplier orders · last 7d</small><b>${esc(measured(sm.last_7d))}</b></div><div class="metric"><small>Demand cumulative sales</small><b>${esc(val(dm.latest_cumulative_sales))}</b></div><div class="metric"><small>Data status</small><b>${esc(dm.data_status||'collecting')}</b></div><div class="metric"><small>Demand Momentum</small><b>${esc(p.demand_momentum_score??'Collecting')} · ${esc(p.demand_momentum_verdict??'COLLECTING')}</b></div><div class="metric"><small>Marketplace Rank</small><b>${esc((p.rank_velocity?.current_rank!=null?'#'+p.rank_velocity.current_rank:'Collecting'))}</b></div><div class="metric"><small>Rank Velocity · 7d</small><b>${esc(p.rank_velocity?.velocity_7d==null?'Collecting':((p.rank_velocity.velocity_7d>0?'+':'')+p.rank_velocity.velocity_7d+'%'))}</b></div><div class="metric"><small>Google Trends</small><b>${esc(p.google_trends?.momentum_pct==null?'Not configured / no data':((p.google_trends.momentum_pct>0?'+':'')+p.google_trends.momentum_pct+'%'))}</b></div><div class="metric"><small>Pinterest Trends</small><b>${esc(p.pinterest_trends?.mom==null?'Not configured / no match':((p.pinterest_trends.mom>0?'+':'')+p.pinterest_trends.mom+'% MoM'))}</b></div></div>
+ <div class="sectionGap panel"><b>Why this product?</b><div class="muted" style="margin-top:8px">Supplier match ${esc(p.supplier_match_score??'—')} · ${esc(p.supplier_name||'Supplier not identified')}</div><div class="muted" style="margin-top:8px">The 24h/7d sales figures are shown only when repeated source snapshots support them. No sales number is invented.</div></div>
+ <div class="sectionGap panel"><b>Links</b><div class="muted sourceLink" style="margin-top:8px">Demand: ${p.url?`<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url)}</a>`:'—'}</div><div class="muted sourceLink" style="margin-top:8px">Supplier: ${p.supplier_url?`<a href="${esc(p.supplier_url)}" target="_blank" rel="noopener">${esc(p.supplier_url)}</a>`:'—'}</div></div>
+ <div class="sectionGap raw"><pre>${esc(JSON.stringify({breakdown:p.breakdown, demand_snapshots:d.demand_snapshots, supplier_snapshots:d.supplier_snapshots},null,2))}</pre></div>`;
+}
+
+function toArray(d){
+ if(Array.isArray(d))return d;
+ if(Array.isArray(d?.products))return d.products;
+ if(Array.isArray(d?.items))return d.items;
+ if(Array.isArray(d?.results))return d.results;
+ return [];
+}
+
+function renderProducts(d,target){
+ const ps=toArray(d);
+ $(target).innerHTML=ps.length?ps.map(productCard).join(""):'<div class="notice">No products returned.</div>';
+ $("kAccepted").textContent=ps.length;
+ $("kWinners").textContent=ps.filter(p=>Number(p.score||0)>=80||String(p.verdict||"").toUpperCase().includes("WINNER")).length;
+ $("kAvg").textContent=ps.length?(ps.reduce((a,p)=>a+Number(p.score||0),0)/ps.length).toFixed(1):"—";
+ return ps;
+}
+
+async function health(){
+ try{const d=await api("/health");$("backendStatus").className="status online";$("backendStatus").textContent="🟢 Backend "+(d.version||"Online");$("kBackend").textContent="ONLINE"}
+ catch(e){$("backendStatus").className="status offline";$("backendStatus").textContent="🔴 Backend Offline";$("kBackend").textContent="OFFLINE"}
+}
+
+function filterAndSortProducts(ps){
+ const min=Number($("minAiScore")?.value||0), type=$("opportunityType")?.value||"all", sort=$("sortBy")?.value||"opportunity";
+ let out=ps.filter(p=>Number(p.opportunity_score??p.score??0)>=min);
+ if(type!=="all") out=out.filter(p=>String(p.viral_classification||p.demand_momentum_verdict||"").toUpperCase().includes(type));
+ const val=p=>sort==="viral"?Number(p.early_viral_score||0):sort==="demand"?Number(p.demand_momentum_score||0):sort==="rank"?Number(p.rank_velocity?.velocity_7d||0):sort==="sales"?Number(p.sales_last_7d||0):sort==="latest"?new Date(p.discovered_at||0).getTime():Number(p.opportunity_score??p.score??0);
+ return out.sort((a,b)=>val(b)-val(a));
+}
+async function refreshAccepted(){
+ try{const d=await api("/products/accepted?limit=200");const ps=filterAndSortProducts(toArray(d));renderProducts(ps,"huntResults");renderProducts(ps.slice(0,12),"dashCards")}
+ catch(e){$("huntResults").innerHTML=`<div class="notice">Could not load products: ${esc(e.message)}</div>`}
+}
+
+async function refreshWinners(){
+ try{const d=await api("/products/winners");renderProducts(d,"winnerCards")}
+ catch(e){$("winnerCards").innerHTML=`<div class="notice">Could not load winners: ${esc(e.message)}</div>`}
+}
+
+async function refreshTrending(){
+ try{const d=await api("/products/trending?limit=50");renderProducts(d,"signalCards")}
+ catch(e){$("signalCards").innerHTML=`<div class="notice">Could not load demand signals: ${esc(e.message)}</div>`}
+}
+
+async function runHunt(){
+ const btn=$("runBtn");btn.disabled=true;btn.textContent="⏳ HUNTING…";$("huntMsg").textContent="Starting pipeline…";showTab("pipeline");
+ try{
+  const category=$("category").value;
+  const body={keyword:$("keyword")?.value?.trim()||null,marketplace:$("market").value,max_products:Number($("maxProducts").value),min_score:Number($("minAiScore").value)};
+  await api(category==="all"?"/auto-hunt/all":"/auto-hunt/"+category,{method:"POST",body:JSON.stringify(body)});
+  $("huntMsg").textContent="Hunt completed";await refreshPipeline();await refreshAccepted();await refreshWinners();
+ }catch(e){$("huntMsg").textContent="Failed: "+e.message;await refreshPipeline()}
+ btn.disabled=false;btn.textContent="🚀 RUN AI HUNT";
+}
+
+async function runAuto(cat){
+ showTab("pipeline");
+ try{await api("/auto-hunt/"+cat,{method:"POST",body:JSON.stringify({max_products:20})});await refreshPipeline();await refreshAccepted();await refreshWinners()}
+ catch(e){$("pipelineRaw").innerHTML="<pre>"+esc(e.message)+"</pre>"}
+}
+
+function drawPipeline(d){
+ const stage=String(d?.stage||d?.status||"unknown").toLowerCase();
+ const stages=["scraping","normalizing","filtering","scoring","complete"];
+ let idx=stages.indexOf(stage);if(stage==="completed")idx=4;
+ $("pipelineBox").innerHTML='<div class="steps">'+stages.map((s,i)=>{let done=stage==="complete"||idx>i,live=stage===s;return `<div class="step ${done?"done":""} ${live?"live":""}"><b>${done?"✓ ":live?"⏳ ":""}${s[0].toUpperCase()+s.slice(1)}</b><span>${live?"Current stage":done?"Completed":"Waiting"}</span></div>`}).join("")+"</div>";
+ const c=d?.counters||d?.counts||{};
+ $("pDemand").textContent=c.demand_seen??d?.demand_seen??"—";$("pSupplier").textContent=c.supplier_records??d?.supplier_records??"—";$("pAccepted").textContent=c.accepted??d?.accepted??"—";$("pRejected").textContent=c.rejected??d?.rejected??"—";$("pErrors").textContent=c.errors??d?.errors??"—";
+ $("pipelineRaw").innerHTML="<pre>"+esc(JSON.stringify(d,null,2))+"</pre>";$("dashPipeline").innerHTML=$("pipelineBox").innerHTML;
+}
+
+async function refreshPipeline(){
+ try{drawPipeline(await api("/pipeline/latest"))}
+ catch(e){$("pipelineBox").innerHTML=`<div class="notice">Pipeline endpoint unavailable: ${esc(e.message)}</div>`;$("pipelineRaw").innerHTML="<pre>"+esc(e.message)+"</pre>"}
+}
+
+async function refreshScraper(){
+ try{
+  const d=await api("/scraper-data/latest");$("scraperBox").innerHTML="<pre>"+esc(JSON.stringify(d,null,2))+"</pre>";
+  const c=d?.counters||d?.counts||{};
+  $("scraperMeta").innerHTML=`<div class="stat"><small>Amazon Records</small><b>${esc(c.amazon??d?.amazon_count??"—")}</b></div><div class="stat"><small>AliExpress Records</small><b>${esc(c.aliexpress??d?.aliexpress_count??"—")}</b></div><div class="stat"><small>Source</small><b style="font-size:14px">${esc(d?.source??"—")}</b></div>`;
+ }catch(e){$("scraperBox").innerHTML="<pre>"+esc(e.message)+"</pre>"}
+}
+
+/* HISTORY FIX: never calls .map() until rows is definitely an array */
+async function refreshHistory(){
+ try{
+  const d=await api("/hunt-history?limit=50");
+  let rows=[];
+  if(Array.isArray(d))rows=d;
+  else if(Array.isArray(d?.history))rows=d.history;
+  else if(Array.isArray(d?.hunts))rows=d.hunts;
+  else if(Array.isArray(d?.items))rows=d.items;
+  else if(Array.isArray(d?.results))rows=d.results;
+
+  if(!rows.length){
+   $("historyTable").innerHTML=`<table><thead><tr><th>Time</th><th>Category</th><th>Keyword</th><th>Products</th><th>Accepted</th><th>Status</th></tr></thead><tbody><tr><td colspan="6">No hunt history yet.</td></tr></tbody></table>`;
+   $("kHunts").textContent="0";return;
+  }
+
+  $("historyTable").innerHTML=`<table><thead><tr><th>Time</th><th>Category</th><th>Keyword</th><th>Products</th><th>Accepted</th><th>Status</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.created_at||x.timestamp||x.time||"—")}</td><td>${esc(x.category||"—")}</td><td>${esc(x.keyword||"Automatic")}</td><td>${esc(x.products||x.total_products||x.product_count||"—")}</td><td>${esc(x.accepted||x.accepted_count||"—")}</td><td>${esc(x.status||"—")}</td></tr>`).join("")}</tbody></table>`;
+  $("kHunts").textContent=rows.length;
+ }catch(e){$("historyTable").innerHTML=`<div class="notice">History endpoint error: ${esc(e.message)}</div>`}
+}
+
+async function refreshAll(){
+ await Promise.allSettled([health(),refreshAccepted(),refreshWinners(),refreshTrending(),refreshPipeline(),refreshHistory()]);
+}
+health();refreshAll();
+</script>
+
+<script>
+/* v6.3 Premium Intelligence UI — additive layer, existing app remains intact */
+(function(){
+  const API = (window.API_BASE || '').replace(/\/$/,'') || '';
+  const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num = (v,d='—') => v===null||v===undefined||v===''?d:(typeof v==='number'?Math.round(v*10)/10:esc(v));
+  const pick=(o,...ks)=>{for(const k of ks){if(o&&o[k]!==undefined&&o[k]!==null)return o[k]}return null};
+  async function get(path){try{const r=await fetch(API+path,{cache:'no-store'});return r.ok?await r.json():null}catch(e){return null}}
+  function arr(x){return Array.isArray(x)?x:(x?.products||x?.items||x?.data||x?.results||[])}
+  function card(p){
+    const title=pick(p,'title','name','product_name')||'Product';
+    const img=pick(p,'image_url','image','imageUrl','thumbnail');
+    const price=pick(p,'selling_price','price','current_price');
+    const score=pick(p,'opportunity_score','ai_score','score');
+    const viral=pick(p,'early_viral_score','viral_score');
+    const demand=pick(p,'demand_score','demand');
+    const rank=pick(p,'current_rank','rank');
+    const rd=pick(p,'rank_7d_change','rank_delta_7d');
+    const verdict=pick(p,'classification','verdict','ai_verdict')||'INSUFFICIENT DATA';
+    const note=pick(p,'ai_explanation','explanation','why')||'Open Product Intelligence for the full evidence breakdown.';
+    return `<article class="product-card" data-ph-product='${esc(JSON.stringify(p)).replace(/'/g,"&#39;")}'>
+      ${img?`<img src="${esc(img)}" loading="lazy" onerror="this.style.display='none'">`:''}
+      <div class="product-body">
+        <span class="badge">${esc(verdict)}</span>
+        <div class="product-name">${esc(title)}</div>
+        <div class="price">${price==null?'Price unavailable':'$'+num(price)}</div>
+        <div class="score-row">
+          <div class="score"><small>AI</small><strong>${num(score)}</strong></div>
+          <div class="score"><small>Viral</small><strong>${num(viral)}</strong></div>
+          <div class="score"><small>Demand</small><strong>${num(demand)}</strong></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;color:var(--m);font-size:12px">
+          <span>Rank <b>${num(rank)}</b></span>
+          <span class="${rd>0?'trend-up':''}">${rd==null?'7D: —':'7D: ↑ '+num(rd)}</span>
+        </div>
+        <div class="ai-note" style="margin-top:12px">${esc(note)}</div>
+      </div>
+    </article>`;
+  }
+  async function mount(){
+    if(document.querySelector('#ph63-intelligence')) return;
+    const host=document.querySelector('main')||document.querySelector('.app');
+    if(!host) return;
+    const wrap=document.createElement('section'); wrap.id='ph63-intelligence';
+    wrap.innerHTML=`
+      <div class="premium-hero">
+        <div style="color:var(--g);font-weight:800;font-size:12px;letter-spacing:.08em">PRODUCT INTELLIGENCE • USA</div>
+        <h1>What should I investigate today?</h1>
+        <p>AI-ranked opportunities based on demand acceleration, ranking movement, competition, product economics and content potential.</p>
+        <div class="filters-clean">
+          <select id="ph63-cat"><option value="">All categories</option><option value="kitchen_utility">Kitchen Utility</option><option value="home_decor">Home Decor</option></select>
+          <select id="ph63-type"><option value="">All opportunities</option><option>EARLY VIRAL</option><option>HIGH DEMAND</option><option>RISING FAST</option><option>HIGH DEMAND / SATURATED</option></select>
+          <select id="ph63-sort"><option value="opportunity_score">Opportunity</option><option value="early_viral_score">Viral</option><option value="demand_score">Demand</option><option value="rank_7d_change">Rank Momentum</option></select>
+          <input id="ph63-search" placeholder="Search products...">
+          <button id="ph63-refresh">Refresh intelligence</button>
+        </div>
+      </div>
+      <div class="context-bar">
+        <div class="context-item"><small>Market</small><strong>🇺🇸 USA</strong></div>
+        <div class="context-item"><small>Categories</small><strong>2</strong></div>
+        <div class="context-item"><small>Sources</small><strong>3+ + ranking</strong></div>
+        <div class="context-item"><small>Tracked</small><strong id="ph63-count">—</strong></div>
+        <div class="context-item"><small>Intelligence</small><strong style="color:var(--g)">● Active</strong></div>
+      </div>
+      <div id="ph63-sections">
+        <div class="intel-section"><div class="intel-heading"><div><h2>🔥 Early Viral Opportunities</h2><p>Acceleration before saturation.</p></div></div><div id="ph63-viral" class="product-grid"></div></div>
+        <div class="intel-section"><div class="intel-heading"><div><h2>📈 High Demand</h2><p>Strong current demand with commercial potential.</p></div></div><div id="ph63-demand" class="product-grid"></div></div>
+        <div class="intel-section"><div class="intel-heading"><div><h2>🚀 Rising Now</h2><p>Positive momentum that deserves investigation.</p></div></div><div id="ph63-rising" class="product-grid"></div></div>
+        <div class="intel-section"><div class="intel-heading"><div><h2>⚠️ High Demand / Saturated</h2><p>Strong demand, but late-entry risk is high.</p></div></div><div id="ph63-saturated" class="product-grid"></div></div>
+      </div>`;
+    host.prepend(wrap);
+
+    async function load(){
+      const candidates=arr(await get('/products/candidates?limit=200'));
+      const accepted=arr(await get('/products/accepted?limit=200'));
+      const all=[...candidates,...accepted];
+      const map=new Map();
+      all.forEach(p=>map.set(p.fingerprint||p.product_id||p.id||p.url||p.title,p));
+      let ps=[...map.values()];
+      const cat=document.querySelector('#ph63-cat').value, type=document.querySelector('#ph63-type').value, q=document.querySelector('#ph63-search').value.toLowerCase();
+      if(cat)ps=ps.filter(p=>String(p.category||'').toLowerCase().includes(cat));
+      if(type)ps=ps.filter(p=>String(p.classification||p.verdict||'').toUpperCase()===type);
+      if(q)ps=ps.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
+      const sort=document.querySelector('#ph63-sort').value;
+      ps.sort((a,b)=>(Number(pick(b,sort,'opportunity_score','score'))||0)-(Number(pick(a,sort,'opportunity_score','score'))||0));
+      document.querySelector('#ph63-count').textContent=ps.length;
+      const cls=p=>String(p.classification||p.verdict||'').toUpperCase();
+      const viral=ps.filter(p=>cls(p)==='EARLY VIRAL').slice(0,6);
+      const sat=ps.filter(p=>cls(p).includes('SATURATED')).slice(0,6);
+      const rising=ps.filter(p=>['RISING FAST','RISING'].includes(cls(p))).slice(0,6);
+      const demand=ps.filter(p=>['HIGH DEMAND'].includes(cls(p))).slice(0,6);
+      // fallback: if classifications are not populated yet, still surface ranked products.
+      const fallback=ps.slice(0,6);
+      const render=(id,data)=>document.querySelector(id).innerHTML=(data.length?data:fallback).map(card).join('')||'<div class="ai-note">Collecting baseline data.</div>';
+      render('#ph63-viral',viral);render('#ph63-demand',demand);render('#ph63-rising',rising);render('#ph63-saturated',sat);
+      document.querySelectorAll('.product-card').forEach(el=>el.onclick=()=>showDetail(JSON.parse(el.dataset.phProduct)));
+    }
+    ['ph63-cat','ph63-type','ph63-sort'].forEach(id=>document.getElementById(id).onchange=load);
+    document.getElementById('ph63-search').oninput=()=>load();
+    document.getElementById('ph63-refresh').onclick=load;
+    await load();
+
+    function showDetail(p){
+      const title=pick(p,'title','name')||'Product';
+      const img=pick(p,'image_url','image','imageUrl');
+      const fields=[
+        ['Opportunity',pick(p,'opportunity_score','ai_score','score')],
+        ['Viral',pick(p,'early_viral_score','viral_score')],
+        ['Demand',pick(p,'demand_score','demand')],
+        ['Competition',pick(p,'competition_score','competition')],
+        ['Rank',pick(p,'current_rank','rank')],
+        ['7D Rank Change',pick(p,'rank_7d_change','rank_delta_7d')],
+        ['Sales 24H',pick(p,'sales_24h','orders_24h')],
+        ['Sales 7D',pick(p,'sales_7d','orders_7d')],
+        ['Price',pick(p,'selling_price','price')],
+        ['COGS',pick(p,'cogs','supplier_price')],
+        ['Markup',pick(p,'markup')],
+        ['Content',pick(p,'content_potential')]
+      ];
+      const modal=document.createElement('div');modal.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:999;overflow:auto;padding:20px';
+      modal.innerHTML=`<div style="max-width:1100px;margin:20px auto;background:var(--bg);border-radius:24px;padding:18px">
+        <button id="ph63-close" style="float:right">Close</button>
+        <div class="detail-shell">
+          <div>${img?`<img class="detail-image" src="${esc(img)}">`:''}</div>
+          <div><span class="badge">${esc(p.classification||p.verdict||'INSUFFICIENT DATA')}</span><h1>${esc(title)}</h1>
+            <div class="ai-verdict"><h3>AI VERDICT</h3><div class="big-score">${num(p.opportunity_score||p.ai_score||p.score)}</div>
+            <div>${esc(p.ai_explanation||p.explanation||p.why||'Evidence is still being collected.')}</div></div>
+          </div>
+        </div>
+        <h2 style="margin-top:24px">Intelligence</h2><div class="detail-grid">${fields.map(([k,v])=>`<div class="detail-metric"><small>${k}</small><strong>${num(v)}</strong></div>`).join('')}</div>
+        <div class="ai-note" style="margin-top:16px">Data is shown as observed or derived only when supported by the backend. Missing historical data is not fabricated.</div>
+      </div>`;
+      document.body.appendChild(modal);document.getElementById('ph63-close').onclick=()=>modal.remove();
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
+})();
+</script>
+
+</body>
+</html>
