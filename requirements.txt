@@ -1,6 +1,4 @@
-fastapi
-uvicorn
-httpx
-pydantic
-APScheduler
-python-dateutil
+requests==2.31.0
+python-dotenv==1.0.0
+flask==3.0.0
+gunicorn==21.2.0
