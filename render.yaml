@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: product-hunter
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app/main.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: RAPIDAPI_KEY
+        sync: false
+      - key: RAPIDAPI_HOST
+        value: amazon-data-scraper-api2.p.rapidapi.com
