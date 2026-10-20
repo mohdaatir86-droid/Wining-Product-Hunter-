@@ -8,7 +8,7 @@ from html.parser import HTMLParser
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
-VERSION="6.5.0"
+VERSION="6.5.1"
 DB_PATH=os.getenv("PRODUCT_HUNTER_DB","product_hunter.db")
 
 app=FastAPI(title="Product Hunter API", version=VERSION)
@@ -937,8 +937,13 @@ async def execute_hunt(category, req):
     if category not in CATEGORIES:
         raise ValueError("Only kitchen_utility and home_decor are allowed")
 
-    queries = [req.keyword] if req.keyword else CATEGORIES[category][:5]
-    queries = [q for q in queries if q]
+    # Use product-intent queries rather than generic single words.
+    query_sets = {
+        "kitchen_utility": ["innovative kitchen gadgets", "kitchen organization storage products", "space saving kitchen tools", "kitchen cleaning organizers", "meal prep kitchen accessories"],
+        "home_decor": ["modern home decor accessories", "small space home decor", "wall decor living room", "decorative storage organizers", "minimalist home accents"],
+    }
+    queries = [req.keyword] if req.keyword else query_sets[category]
+    queries = [q.strip() for q in queries if q and q.strip()]
 
     started = now()
     c = db()
@@ -962,19 +967,35 @@ async def execute_hunt(category, req):
         demand_sources=[]; supplier_sources=[]
         async def safe_demand(name, fn):
             try:
-                rows=await fn();
-                demand_sources.append((name,rows)); save_scraper_snapshot(run_id,f"{name}_amazon",rows)
-                return name,rows,None
+                rows = await asyncio.wait_for(fn(), timeout=100)
+                if not isinstance(rows, list): rows = []
+                demand_sources.append((name, rows))
+                save_scraper_snapshot(run_id, f"{name}_amazon", rows)
+                if not rows:
+                    record_source_health(name, "amazon", cfg["country"], "success", 0, 0,
+                                         "Provider returned zero extractable product records", None)
+                return name, rows, None
             except Exception as e:
-                return name,[],str(e)
+                msg = "provider timed out after 100 seconds" if isinstance(e, asyncio.TimeoutError) else str(e)
+                record_source_health(name, "amazon", cfg["country"], "failure", 0, 0, msg, None)
+                return name, [], msg
         async def safe_supplier(name, fn):
             try:
-                rows=await fn(); supplier_sources.append((name,rows)); save_scraper_snapshot(run_id,f"{name}_aliexpress",rows)
-                return name,rows,None
+                rows = await asyncio.wait_for(fn(), timeout=100)
+                if not isinstance(rows, list): rows = []
+                supplier_sources.append((name, rows))
+                save_scraper_snapshot(run_id, f"{name}_aliexpress", rows)
+                if not rows:
+                    record_source_health(name, "aliexpress", cfg["country"], "success", 0, 0,
+                                         "Provider returned zero extractable supplier records", None)
+                return name, rows, None
             except Exception as e:
-                return name,[],str(e)
+                msg = "provider timed out after 100 seconds" if isinstance(e, asyncio.TimeoutError) else str(e)
+                record_source_health(name, "aliexpress", cfg["country"], "failure", 0, 0, msg, None)
+                return name, [], msg
 
         tasks=[]
+        set_pipeline(run_id, category, "collecting", "Connecting to configured product and supplier providers", seen=0, suppliers=0, accepted=0)
         if os.getenv("SCRAPEDO_API_KEY"):
             tasks.append(safe_demand("scrapedo",lambda: run_scrapedo_amazon(queries,req)))
         if os.getenv("BRIGHTDATA_API_KEY"):
@@ -1018,7 +1039,7 @@ async def execute_hunt(category, req):
             for name,rows,err in results:
                 if err: source_errors.append(f"{name}: {err}")
         if not demand_sources:
-            source_errors.append("No demand provider returned records. Check /source-health and provider credentials/quotas.")
+            source_errors.append("No demand provider returned records. Check /sources/status and /source-health for missing credentials, provider errors, or exhausted quotas.")
         def merge_sources(groups):
             merged={}
             for source,rows in groups:
@@ -1156,6 +1177,8 @@ async def execute_hunt(category, req):
         set_pipeline(run_id, category, "complete" if demand else "no_data", f"Completed: {len(accepted)} accepted from {len(demand)} demand records", seen=len(demand), suppliers=len(supplier), accepted=len(accepted))
         status = "success" if demand else "no_data"
         error_text = "; ".join(source_errors)[:2000] if source_errors else None
+        if not demand:
+            set_pipeline(run_id, category, "no_data", "No products were extracted. Review provider credentials, quotas, and source-health details.", seen=0, suppliers=len(supplier), accepted=0)
 
         c = db()
         c.execute(
