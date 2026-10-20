@@ -571,7 +571,7 @@ async def test_dataforseo():
 def record_source_health(source,marketplace,country,status,records,elapsed_ms,error=None,fields=None):
     c=db()
     row=c.execute("SELECT success_count,failure_count,empty_count,avg_ms,last_success FROM source_health WHERE source=?",(f"{source}:{marketplace}",)).fetchone()
-    sc,fc,ec,avg=(row if row else (0,0,0,None))
+    sc,fc,ec,avg,last_success=(row if row else (0,0,0,None,None))
     if status=="success":
         sc+=1
         if records==0: ec+=1
