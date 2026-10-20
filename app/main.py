@@ -1043,7 +1043,7 @@ async def execute_hunt(category, req):
                         "maxItemsPerList": item_limit,
                         "maxItems": item_limit,
                     }
-                else:
+                elif "codingfrontend/amazon-product-scraper" not in da.lower():
                     demand_input={"searchQueries":queries,"marketplace":cfg["code"],"maxProductsPerSearch":max(5,min(req.max_products,50)),"maxSearchPages":max(1,min(req.amazon_pages,5)),"proxyConfiguration":{"useApifyProxy":True,"apifyProxyGroups":["RESIDENTIAL"]}}
                 tasks.append(safe_demand("apify",lambda: run_actor(da,token,demand_input)))
             if sa:
