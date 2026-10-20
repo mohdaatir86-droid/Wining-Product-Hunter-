@@ -1014,8 +1014,8 @@ async def execute_hunt(category, req):
             # The previously configured cirkit actor returns 404 (actor no longer exists).
             # Use a currently published public Amazon product scraper unless the user has
             # supplied a different, working actor ID.
-            if not da or "cirkit/amazon-best-sellers-scraper" in da.lower():
-                da = "codingfrontend/amazon-product-scraper"
+            if not da or "cirkit/amazon-best-sellers-scraper" in da.lower() or "codingfrontend/amazon-product-scraper" in da.lower():
+                da = "cirkit/amazon-bestsellers-scraper"
             if da:
                 if "codingfrontend/amazon-product-scraper" in da.lower():
                     demand_input = {
@@ -1029,7 +1029,7 @@ async def execute_hunt(category, req):
                     }
                 # The cirkit Amazon Best Sellers actor expects startUrls/list controls,
                 # not the generic searchQueries payload used by other actors.
-                if "amazon-best-sellers-scraper" in da.lower():
+                if "amazon-best-sellers-scraper" in da.lower() or "amazon-bestsellers-scraper" in da.lower():
                     if category == "kitchen_utility":
                         best_seller_url = "https://www.amazon.com/Best-Sellers-Kitchen-Dining/zgbs/kitchen/"
                     else:
