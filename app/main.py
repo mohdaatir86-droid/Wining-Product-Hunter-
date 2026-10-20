@@ -8,7 +8,7 @@ from html.parser import HTMLParser
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
-VERSION="6.5.0"
+VERSION="6.5.1"
 DB_PATH=os.getenv("PRODUCT_HUNTER_DB","product_hunter.db")
 
 app=FastAPI(title="Product Hunter API", version=VERSION)
@@ -117,19 +117,40 @@ def norm(s):
     return re.sub(r"[^a-z0-9]+"," ",s).strip()
 
 def name_of(x): return str(first(x,["name","title","productName","product_name","productTitle","product_title","itemTitle"],"")).strip()
+PRICE_KEYS = ["price","final_price","finalPrice","currentPrice","current_price","salePrice","sale_price","sellingPrice","selling_price","priceValue","price_value","price(number)","buybox_price","price_current","initial_price","original_price","list_price"]
+RATING_KEYS = ["rating","stars","starRating","star_rating","ratingValue","rating(number)","average_rating"]
+REVIEW_KEYS = ["reviews","reviews_count","reviewCount","review_count","ratingsTotal","ratings_total","num_ratings","numRatings","ratings_count","ratingsCount","review count(number)","total_reviews"]
+
+def _scalar(v):
+    # Providers sometimes nest values, e.g. {"amount": 19.99} or {"value": 4.5}.
+    if isinstance(v, dict):
+        return first(v,["amount","value","current","price","raw"],None)
+    if isinstance(v, list):
+        return v[0] if v else None
+    return v
+
+def first_positive(x, names):
+    """Return the first key whose value parses to a number > 0. Zero/empty values are skipped,
+    so e.g. Bright Data's initial_price=0 never hides a real final_price."""
+    if not isinstance(x, dict): return 0
+    low = {str(k).lower(): v for k, v in x.items()}
+    for n in names:
+        v = _scalar(low.get(n.lower()))
+        if v in (None, ""): continue
+        f = num(v)
+        if f > 0: return f
+    return 0
+
 def price_of(x):
-    v = first(x,["price","currentPrice","current_price","salePrice","sale_price","sellingPrice","selling_price","priceValue","price_value"],0)
-    # Crawlbase may return "$49.99", "49.99 USD", or a numeric value.
-    return num(v)
+    # Crawlbase may return "$49.99", "49.99 USD", or a numeric value; Bright Data uses final_price.
+    return first_positive(x, PRICE_KEYS)
 
 def rating_of(x):
-    v = first(x,["rating","stars","starRating","star_rating","ratingValue"],0)
-    r = num(v)
+    r = first_positive(x, RATING_KEYS)
     return r if 0 <= r <= 5 else 0
 
 def reviews_of(x):
-    v = first(x,["reviews","reviews_count","reviewCount","review_count","ratingsTotal","ratings_total"],0)
-    return integer(v)
+    return integer(first_positive(x, REVIEW_KEYS))
 
 def sales_of(x):
     """Cumulative order/sold count only. Rolling-window values are intentionally excluded."""
@@ -1010,9 +1031,12 @@ async def execute_hunt(category, req):
                         merged[key]={"row":dict(row),"sources":[source]}
                     else:
                         merged[key]["sources"].append(source)
-                        # Prefer the row with richer fields.
-                        if len(json.dumps(row,default=str))>len(json.dumps(merged[key]["row"],default=str)):
-                            merged[key]["row"]=dict(row)
+                        # Combine both rows instead of replacing one with the other, so a price/review
+                        # count from one provider is never lost because another provider sent more fields.
+                        base=merged[key]["row"]
+                        for k,v in dict(row).items():
+                            if base.get(k) in (None,"",0,[],{}) and v not in (None,"",0,[],{}):
+                                base[k]=v
             return [(v["row"],v["sources"]) for v in merged.values()]
         demand_merged=merge_sources(demand_sources)
         supplier_merged=merge_sources(supplier_sources)
@@ -1364,6 +1388,12 @@ def demand_signal_status():
         },
         "weights":{"rank_velocity":35,"google_trends":25,"pinterest_trends":15,"sales_signal":15,"competition_proxy":10}
     }
+
+@app.get("/products/candidates")
+def candidates(limit:int=200,category:Optional[str]=None):
+    # Used by the dashboard's intelligence section. Returns every saved scored product.
+    ps=products(limit,category)
+    return {"status":"success","count":len(ps),"products":ps}
 
 @app.get("/products/winners")
 def winners(limit:int=50): return {"status":"success","products":[p for p in products(limit) if p.get("score",0)>=80]}
