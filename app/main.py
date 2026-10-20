@@ -1009,7 +1009,7 @@ async def execute_hunt(category, req):
         if os.getenv("ENABLE_CRAWLBASE","false").lower() in {"1","true","yes","on"} and os.getenv("CRAWLBASE_TOKEN"):
             tasks.append(safe_demand("crawlbase",lambda: run_crawlbase_amazon(queries,req.amazon_pages,req)))
             tasks.append(safe_supplier("crawlbase",lambda: run_crawlbase_aliexpress(queries,req.supplier_pages,req)))
-        if os.getenv("ENABLE_APIFY","false").lower() in {"1","true","yes","on"} and os.getenv("APIFY_API_TOKEN"):
+        if os.getenv("ENABLE_APIFY","true").lower() in {"1","true","yes","on"} and os.getenv("APIFY_API_TOKEN"):
             token=os.getenv("APIFY_API_TOKEN"); da=os.getenv("APIFY_DEMAND_ACTOR_ID"); sa=os.getenv("APIFY_SUPPLIER_ACTOR_ID")
             if da:
                 # The cirkit Amazon Best Sellers actor expects startUrls/list controls,
@@ -1034,10 +1034,15 @@ async def execute_hunt(category, req):
                 supplier_input={"mode":"search","searchQuery":" ".join(queries[:2]),"region":cfg["code"].lower() if cfg["code"] in {"US","GB","CA","AU","DE"} else "com","currency":cfg["currency"],"language":"en_US","sortBy":"orders_desc","priceMin":0,"priceMax":max(1,int(req.max_cogs)),"shipTo":cfg["supplier_ship_to"],"maxItems":max(20,min(req.max_products*5,100)),"maxPages":max(1,min(req.supplier_pages,10))}
                 tasks.append(safe_supplier("apify",lambda: run_actor(sa,token,supplier_input)))
 
+        if not tasks:
+            source_errors.append("No provider tasks started: configure ZENROWS_API_KEY, SCRAPEDO_API_KEY, BRIGHTDATA_API_KEY, SCRAPINGANT_API_KEY, or APIFY_API_TOKEN plus APIFY_DEMAND_ACTOR_ID.")
         if tasks:
             results=await asyncio.gather(*tasks, return_exceptions=False)
             for name,rows,err in results:
-                if err: source_errors.append(f"{name}: {err}")
+                if err:
+                    source_errors.append(f"{name}: {err}")
+                elif rows:
+                    source_errors.append(f"{name}: returned {len(rows)} records")
         if not demand_sources:
             source_errors.append("No demand provider returned records. Check /sources/status and /source-health for missing credentials, provider errors, or exhausted quotas.")
         def merge_sources(groups):
