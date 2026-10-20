@@ -1011,7 +1011,23 @@ async def execute_hunt(category, req):
             tasks.append(safe_supplier("crawlbase",lambda: run_crawlbase_aliexpress(queries,req.supplier_pages,req)))
         if os.getenv("ENABLE_APIFY","true").lower() in {"1","true","yes","on"} and os.getenv("APIFY_API_TOKEN"):
             token=os.getenv("APIFY_API_TOKEN"); da=os.getenv("APIFY_DEMAND_ACTOR_ID"); sa=os.getenv("APIFY_SUPPLIER_ACTOR_ID")
+            # The previously configured cirkit actor returns 404 (actor no longer exists).
+            # Use a currently published public Amazon product scraper unless the user has
+            # supplied a different, working actor ID.
+            if not da or "cirkit/amazon-best-sellers-scraper" in da.lower():
+                da = "codingfrontend/amazon-product-scraper"
             if da:
+                if "codingfrontend/amazon-product-scraper" in da.lower():
+                    demand_input = {
+                        "mode": "search",
+                        "searchQuery": queries[0] if queries else "kitchen organization",
+                        "marketplace": "com",
+                        "maxItems": max(5, min(int(req.max_products), 30)),
+                        "productReviews": False,
+                        "requestDelayMs": 600,
+                        "maxRetries": 1,
+                        "proxyConfiguration": {"useApifyProxy": True}
+                    }
                 # The cirkit Amazon Best Sellers actor expects startUrls/list controls,
                 # not the generic searchQueries payload used by other actors.
                 if "amazon-best-sellers-scraper" in da.lower():
