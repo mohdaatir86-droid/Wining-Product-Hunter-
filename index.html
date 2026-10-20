@@ -16,11 +16,11 @@
 <body>
 <main class="shell">
 <header class="top"><div class="brand"><div class="logo">PH</div><div><h1>Product Hunter</h1><div class="sub">USA · Kitchen Utility & Home Decor · Evidence-first discovery</div></div></div><div class="actions"><button class="btn" id="refreshBtn">Refresh data</button><button class="btn" id="exportBtn">Export CSV</button><button class="btn primary" id="huntBtn">Run Hunt</button></div></header>
-<section class="hero"><h2>Discover demand before the crowd.</h2><p>Live backend results only. Missing sales, ranking or trend evidence is shown as unavailable—not guessed. Historical velocity requires multiple stored snapshots.</p></section>
+<section class="hero"><h2>Spot the opportunity. Understand the evidence.</h2><p>Find promising products for a USA dropshipping store, compare demand and competition, and see what the data actually supports before spending on ads.</p></section>
 <div id="notice" class="notice">Connecting to the Product Hunter backend…</div>
 <div class="layout">
 <aside class="panel filters">
-<h3>Opportunity filters</h3>
+<h3>Refine opportunities</h3><p class="panel-sub">Shortlist products without a fixed selling-price cutoff.</p>
 <div class="field"><label for="apiBase">Backend URL</label><input id="apiBase" type="url" value="https://wining-product-hunter.onrender.com" placeholder="https://your-service.onrender.com"></div>
 <div class="field"><label for="category">Category</label><select id="category"><option value="all">Kitchen Utility + Home Decor</option><option value="kitchen_utility">Kitchen Utility</option><option value="home_decor">Home Decor</option></select></div>
 <div class="field"><label for="opportunity">Opportunity type</label><select id="opportunity"><option value="all">All opportunities</option><option value="early_viral">Early Viral</option><option value="high_demand">High Demand</option><option value="rising">Rising</option></select></div>
@@ -39,7 +39,7 @@
 <div class="stat"><div class="num" id="avgStat">—</div><div class="label">Average AI score</div></div>
 <div class="stat"><div class="num" id="sourceStat">—</div><div class="label">Healthy sources</div></div>
 </div>
-<div class="toolbar"><div class="tabs"><button class="tab active" data-tab="all">All</button><button class="tab" data-tab="accepted">Accepted</button><button class="tab" data-tab="review">Review</button><button class="tab" data-tab="rejected">Rejected</button></div><span class="status" id="status">Waiting for API</span></div>
+<div class="toolbar"><div class="tabs"><button class="tab active" data-tab="all">All</button><button class="tab" data-tab="accepted">Accepted</button><button class="tab" data-tab="review">Review</button><button class="tab" data-tab="rejected">Rejected</button></div><div class="toolbar-right"><div class="search"><span>⌕</span><input id="search" type="search" placeholder="Search products…" aria-label="Search products"></div><span class="status" id="status">Waiting for API</span></div></div>
 <div class="products" id="products"><div class="empty">Loading real product records…</div></div>
 <div class="section"><h3>Source health matrix</h3><div class="tablewrap"><table class="healthtable"><thead><tr><th>Source</th><th>Status</th><th>Last checked</th><th>Details</th></tr></thead><tbody id="sourceRows"><tr><td colspan="4">Loading source health…</td></tr></tbody></table></div></div>
 <div class="section"><h3>Latest pipeline run</h3><div id="pipeline">No pipeline result loaded yet.</div></div>
@@ -235,7 +235,7 @@ function exportCsv() {
 }
 $('refreshBtn').addEventListener('click',loadData);$('huntBtn').addEventListener('click',runHunt);$('exportBtn').addEventListener('click',exportCsv);
 $('minScore').addEventListener('input',()=>{$('scoreValue').textContent=$('minScore').value;renderProducts()});
-['category','opportunity','demand','competition','supplier','sort'].forEach(id=>$(id).addEventListener('change',renderProducts));
+['category','opportunity','demand','competition','supplier','sort'].forEach(id=>$(id).addEventListener('change',renderProducts)); $('search')?.addEventListener('input',renderProducts);
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));state.tab=b.dataset.tab;renderProducts()}));
 $('apiBase').addEventListener('change',()=>{localStorage.setItem('ph_api_base',base());loadData()});
 $('resetBtn').addEventListener('click',()=>{$('category').value='all';$('opportunity').value='all';$('minScore').value=0;$('scoreValue').textContent='0';$('demand').value='all';$('competition').value='all';$('supplier').value='all';$('sort').value='opportunity';state.tab='all';document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab==='all'));renderProducts()});
