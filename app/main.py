@@ -1009,7 +1009,7 @@ async def execute_hunt(category, req):
         if os.getenv("ENABLE_CRAWLBASE","false").lower() in {"1","true","yes","on"} and os.getenv("CRAWLBASE_TOKEN"):
             tasks.append(safe_demand("crawlbase",lambda: run_crawlbase_amazon(queries,req.amazon_pages,req)))
             tasks.append(safe_supplier("crawlbase",lambda: run_crawlbase_aliexpress(queries,req.supplier_pages,req)))
-        if os.getenv("ENABLE_APIFY","true").lower() in {"1","true","yes","on"} and os.getenv("APIFY_API_TOKEN"):
+        if os.getenv("APIFY_API_TOKEN") and os.getenv("DISABLE_APIFY","false").lower() not in {"1","true","yes","on"}:
             token=os.getenv("APIFY_API_TOKEN"); da=os.getenv("APIFY_DEMAND_ACTOR_ID"); sa=os.getenv("APIFY_SUPPLIER_ACTOR_ID")
             # The previously configured cirkit actor returns 404 (actor no longer exists).
             # Use a currently published public Amazon product scraper unless the user has
@@ -1340,7 +1340,7 @@ def sources():
         "scrapedo":bool(os.getenv("SCRAPEDO_API_KEY")),
         "brightdata":bool(os.getenv("BRIGHTDATA_API_KEY")),
         "crawlbase_enabled":os.getenv("ENABLE_CRAWLBASE","false").lower() in {"1","true","yes","on"},
-        "apify_enabled":os.getenv("ENABLE_APIFY","false").lower() in {"1","true","yes","on"}
+        "apify_enabled":bool(os.getenv("APIFY_API_TOKEN")) and os.getenv("DISABLE_APIFY","false").lower() not in {"1","true","yes","on"}
     }
 
 @app.get("/provider-tests")
