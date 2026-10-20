@@ -34,7 +34,7 @@ class HuntRequest(BaseModel):
     min_markup: float = 3
     min_rating: float = 4
     min_reviews: int = 50
-    min_score: float = 60
+    min_score: float = 45
 
 
 MARKETS = {
@@ -128,7 +128,7 @@ def rating_of(x):
     return r if 0 <= r <= 5 else 0
 
 def reviews_of(x):
-    v = first(x,["reviews","reviews_count","reviewCount","review_count","ratingsTotal","ratings_total"],0)
+    v = first(x,["reviews","reviews_count","reviewsCount","reviewCount","review_count","ratingsTotal","ratings_total","totalReviews","total_reviews"],0)
     return integer(v)
 
 def sales_of(x):
@@ -138,7 +138,7 @@ def sales_of(x):
 
 def rank_of(x):
     """Marketplace sales/bestseller rank only; SERP position is intentionally not treated as sales rank."""
-    v = first(x,["best_seller_rank","bestSellerRank","sales_rank","salesRank","bsr","best_seller_rank_position","bestseller_rank"],None)
+    v = first(x,["best_seller_rank","bestSellerRank","sales_rank","salesRank","salesRankPosition","sales_rank_position","bsr","best_seller_rank_position","bestseller_rank","rank"],None)
     if isinstance(v, dict):
         v = first(v,["rank","value","position"],None)
     r = integer(v, None) if v is not None else None
@@ -283,7 +283,7 @@ def classify(text):
 
 def hard_reject(name,desc):
     t=norm(name+" "+desc)
-    bad=["electronic","battery","bluetooth","usb","smart device","glass vase","glassware","fragile","edible","food supplement","drink","beverage","seasonal","christmas","halloween","valentine","easter"]
+    bad=["food supplement","dietary supplement","protein powder","vitamin supplement","edible","beverage","soft drink","soda","alcohol","phone case","smartphone","laptop","television","gaming console","clothing","shoes","handbag","jewelry"]
     return any(x in t for x in bad)
 
 def sim(a,b):
@@ -497,7 +497,6 @@ async def run_scrapingant_amazon(queries, req=None):
             y=dict(x)
             if name_of(y): out.append(y)
     return out
-
 async def run_scrapingant_aliexpress(queries, req=None):
     cfg=market_cfg(req or HuntRequest())
     props=[
@@ -997,8 +996,7 @@ async def execute_hunt(category, req):
         tasks=[]
         set_pipeline(run_id, category, "collecting", "Connecting to configured product and supplier providers", seen=0, suppliers=0, accepted=0)
         if os.getenv("SCRAPEDO_API_KEY"):
-            tasks.append(safe_demand("scrapedo",lambda: run_scrapedo_amazon(queries,req)))
-        if os.getenv("BRIGHTDATA_API_KEY"):
+            tasks.append(safe_demand("scrapedo",lambda: run_scrapedo_amazon(queries,req)))        if os.getenv("BRIGHTDATA_API_KEY"):
             tasks.append(safe_demand("brightdata",lambda: run_brightdata_amazon(queries,req)))
         if os.getenv("ZENROWS_API_KEY"):
             tasks.append(safe_demand("zenrows",lambda: run_zenrows_amazon(queries,req)))
@@ -1147,7 +1145,7 @@ async def execute_hunt(category, req):
             score, breakdown = score_product(
                 sell, cogs, rating, reviews, n, desc, category
             )
-            if score < req.min_score:
+            # Discovery mode: keep viable candidates; scores rank products rather than acting as a strict visibility gate.\n            if score < min(float(req.min_score), 45):
                 rejected += 1
                 diagnostics["rejected_score"] += 1
                 continue
