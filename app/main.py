@@ -1021,7 +1021,6 @@ async def execute_hunt(category, req):
                     demand_input = {
                         "mode": "search",
                         "searchQuery": queries[0] if queries else "kitchen organization",
-                        "marketplace": "com",
                         "maxItems": max(5, min(int(req.max_products), 30)),
                         "productReviews": False,
                         "requestDelayMs": 600,
